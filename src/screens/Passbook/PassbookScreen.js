@@ -7,184 +7,310 @@ import {
   Grid,
   Row,
   Picker,
+  View,
+  H1,
   StyleProvider
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
 import { EAButtonGroup, EABricks, EAListItem } from "../../components";
 import { FabButtonPrimary } from "../../styles";
+import Loader from "../Shared/Loader";
+import {
+  isValid,
+  userPreferences,
+  utility,
+  Enums
+} from "../../utility";
+import PaymentService from "../../services/payments";
 
-const DATA = [
-  {
-    id: "bd7acbea-c1b1-46c2-aed5-3ad53abb28ba",
-    name: "General Expense",
-    outstanding: 1000,
-    credit: null,
-    location: "23rd July 2019"
-  },
-  {
-    id: "3ac68afc-c605-48d3-a4f8-fbd91aa97f63",
-    name: "ABC Supplier Payment",
-    outstanding: null,
-    credit: 1000,
-    location: "23rd July 2019"
-  },
-  {
-    id: "58694a0f-3da1-471f-bd96-145571e29d72",
-    name: "Subahshguy",
-    outstanding: null,
-    credit: 4440,
-    location: "23rd July 2019"
-  },
-  {
-    id: "bd7acbea-c1b1-46c2-aed5-sdsdfsdfsdf",
-    name: "Payment Electricity",
-    outstanding: null,
-    credit: 1220,
-    location: "23rd July 2019"
-  },
-  {
-    id: "3ac68afc-c605-48d3-a4f8-sdfsdfsfsdf",
-    name: "Second Item",
-    outstanding: null,
-    credit: 1220,
-    location: "23rd July 2019"
-  },
-  {
-    id: "58694a0f-3da1-471f-bd96-qweqweqwe",
-    name: "Third Item",
-    outstanding: null,
-    credit: 44330,
-    location: "23rd July 2019"
-  },
-  {
-    id: "bd7acbea-c1b1-46c2-aed5-qasdd",
-    name: "First Item",
-    outstanding: null,
-    credit: 1500,
-    location: "23rd July 2019"
-  },
-  {
-    id: "3ac68afc-c605-48d3-a4f8-xcvxcv",
-    name: "Second Item",
-    outstanding: 234434,
-    credit: null,
-    location: "23rd July 2019"
-  },
-  {
-    id: "58694a0f-3da1-471f-bd96-ytht",
-    name: "Third Item",
-    outstanding: null,
-    credit: 13213,
-    location: "23rd July 2019"
-  },
-  {
-    id: "bd7acbea-c1b1-46c2-aed5-fbb",
-    name: "First Item",
-    outstanding: 21200,
-    credit: null,
-    location: "23rd July 2019"
-  },
-  {
-    id: "3ac68afc-c605-48d3-a4f8-123gr",
-    name: "Second Item",
-    outstanding: 1000,
-    credit: null,
-    location: "23rd July 2019"
-  },
-  {
-    id: "58694a0f-3da1-471f-bd96-lgeoterot",
-    name: "Third Item",
-    outstanding: 1000,
-    credit: null,
-    location: "23rd July 2019"
-  }
-];
+
 
 class PassbookScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selected: null
+      selected: null,
+      filterModalVisible: false,
+      arrPayments: [],
+      fromDate: "",
+      toDate: "",
+      filterType: 0,
+      expense: 0,
+      cash: 0,
+      balance: 0,
+      transactionType: null,
+      isLoading: false
     };
     this.btnFilterTap = this.btnFilterTap.bind(this);
+    this.filterCompletionHandler = this.filterCompletionHandler.bind(this);
+    props.navigation.setParams({
+      onTabFocus: this.handleTabFocus
+    });
   }
 
-  static navigationOptions = {
-    headerShown: false
+  // static navigationOptions = {
+  //   headerShown: false
+  // };
+
+  static navigationOptions = () => {
+    return {
+      // this handler will override the generic one defined at Navigator level
+      tabBarOnPress: ({ navigation, defaultHandler }) => {
+        if (navigation.isFocused()) {
+          
+          return;
+        }
+
+        navigation.state.params.onTabFocus();
+        defaultHandler();
+      },
+    };
   };
+
+  handleTabFocus = () => {
+    console.log("handleTabFocus")
+    // perform your logic here
+  };
+
+  setFilterModalVisible(visible) {
+    this.setState({ filterModalVisible: visible });
+  }
 
   onValueChange = value => {
-    this.setState({
-      selected: value
-    });
+    this.setState(
+      {
+        transactionType: value
+      },
+      () => {
+        this.getPayments();
+      }
+    );
   };
 
-  btnFilterTap(tabId) {}
+  btnFilterTap(tabId) {
+    if (tabId == 2) {
+      this.setFilterModalVisible(true);
+      this.setState({
+        fromDate: "",
+        toDate: "",
+        filterType: tabId,
+        arrPayments: [],
+        expense: 0,
+        cash: 0,
+        balance: 0,
+      });
+    } else {
+      this.setState({ fromDate: "", toDate: "", filterType: tabId }, () => {
+        this.getPayments();
+      });
+    }
+  }
+
+
+
+  filterCompletionHandler(type, fromDate, toDate) {
+    if (type == 1) {
+      this.setState(
+        {
+          fromDate: fromDate,
+          toDate: toDate,
+          filterType: 2,
+          arrPayments: [],
+          expense: 0,
+          cash: 0,
+          balance: 0,
+        },
+        () => {
+          this.getPayments();
+        }
+      );
+    }
+    this.setFilterModalVisible(false);
+  }
+
+  async componentDidMount() {
+    this.getPayments();
+    
+  }
+
+  async componentDidUpdate(){
+   
+  }
+
+  getPayments = async () => {
+    try {
+      this.setState({
+        arrPayments: [],
+        expense: 0,
+        cash: 0,
+        balance: 0
+      });
+      let userId = await userPreferences.getPreferences(userPreferences.userId);
+
+      var formData = {
+        filterType: this.state.filterType,
+        fromDate: this.state.fromDate,
+        toDate: this.state.toDate,
+        transaction_type: this.state.transactionType,
+        userId: userId
+      };
+      this.setState({ isLoading: true });
+      let serverCallPayments = await PaymentService.getPaymentList(formData);
+
+      this.setState({ isLoading: false });
+      if (serverCallPayments.status == 0) {
+        var msg = serverCallPayments.msg;
+        utility.showAlert(msg);
+      } else {
+        if (
+          serverCallPayments.transaction != null ||
+          serverCallPayments.transaction != ""
+        ) {
+          this.setState({
+            arrPayments: serverCallPayments.transaction,
+            expense: 0,
+            cash: 0,
+            balance: 0
+          });
+        } else {
+          this.setState({
+            arrPayments: [],
+            expense: 0,
+            cash: 0,
+            balance: 0
+          });
+        }
+      }
+    } catch (error) {
+      this.setState({ isLoading: false }, () => {
+        Toast.show({
+          text: "Something went wrong.Please try again",
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
+      });
+    }
+  };
+
+  renderFilterPayment = () => {
+    return (
+      <View>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={this.state.filterModalVisible}
+          style={styles.modal}
+          onRequestClose={() => {}}
+        >
+          <View style={styles.modal}>
+            <FilterScreen
+              completionHandler={this.filterCompletionHandler}
+            ></FilterScreen>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
+  renderTransactionTypePicker = () => {
+    return (
+      <Row style={styles.dropdownContainer}>
+        <Icon
+          name="keyboard-arrow-down"
+          type="MaterialIcons"
+          style={styles.pickerIcon}
+        />
+        <Picker
+          note={true}
+          mode="dropdown"
+          style={{ backgroundColor: "transparent", width: "100%" }}
+          selectedValue={this.state.transactionType}
+          onValueChange={this.onValueChange.bind(this)}
+        >
+          <Picker.Item label="Select Type" value={null} key={"null"} />
+          {Enums.paymentType.map((value, index) => {
+            return (
+              <Picker.Item
+                label={value.text}
+                value={value.key}
+                key={value.key + ""}
+              />
+            );
+          })}
+        </Picker>
+      </Row>
+    );
+  };
+
+  renderPayment = () => {
+    if (this.state.arrPayments.length == 0) {
+      return (
+        <View style={styles.message}>
+          <H1>No Payments Data Available.</H1>
+        </View>
+      );
+    } else {
+      return (
+        <>
+          <Row style={styles.bricksContainer}>
+            <EABricks
+              brick1={{
+                text1: this.state.expense,
+                text2: "Expense",
+                color: "#FE3852"
+              }}
+              brick2={{
+                text1: this.state.cash,
+                text2: "Cash",
+                color: "#6DD400"
+              }}
+              brick3={{
+                text1: this.state.balance,
+                text2: "Balance",
+                color: "#F7B500"
+              }}
+            />
+          </Row>
+          <Row>
+            <ScrollView
+              contentContainerStyle={{
+                flexGrow: 1,
+                justifyContent: "space-between"
+              }}
+            >
+              <Row>
+                <FlatList
+                  data={this.state.arrPayments}
+                  renderItem={({ item }) => (
+                    <EAListItem
+                      paymentInfo={item}
+                      type={3}
+                    />
+                  )}
+                  keyExtractor={item => item.id + ""}
+                />
+              </Row>
+            </ScrollView>
+          </Row>
+        </>
+      );
+    }
+  };
 
   render() {
     return (
       <StyleProvider style={getTheme(commonColors)}>
         <Container>
+          
           <Content padder contentContainerStyle={styles.container}>
             <Grid>
               <Row style={styles.buttonGroupSection}>
-                <EAButtonGroup />
+                <EAButtonGroup pressHandler={this.btnFilterTap} />
               </Row>
-              <Row style={styles.dropdownContainer}>
-                <Icon
-                  name="keyboard-arrow-down"
-                  type="MaterialIcons"
-                  style={styles.pickerIcon}
-                />
-                <Picker
-                  note={true}
-                  mode="dropdown"
-                  style={{ backgroundColor: "transparent", width: "100%" }}
-                  selectedValue={this.state.selected}
-                  onValueChange={this.onValueChange.bind(this)}
-                >
-                  <Picker.Item label="All Types" value={null} />
-                  <Picker.Item label="Petty Cash" value="key0" />
-                  <Picker.Item label="Electricity" value="key1" />
-                  <Picker.Item label="Petrol" value="key2" />
-                  <Picker.Item label="Salary" value="key3" />
-                  <Picker.Item label="Medical" value="key4" />
-                </Picker>
-              </Row>
-              <Row style={styles.bricksContainer}>
-                <EABricks
-                  brick1={{ text: "expense", color: "#FE3852" }}
-                  brick2={{ text: "cash", color: "#6DD400" }}
-                  brick3={{ text: "balance", color: "#2e2e2e" }}
-                />
-              </Row>
-              <Row>
-                <ScrollView
-                  contentContainerStyle={{
-                    flexGrow: 1,
-                    justifyContent: "space-between"
-                  }}
-                >
-                  <Row>
-                    <FlatList
-                      data={DATA}
-                      renderItem={({ item }) => (
-                        <EAListItem
-                          creditText={false}
-                          debitText={false}
-                          secondLineIcon={false}
-                          thirdLine={false}
-                          supplier={item}
-                          showNegative={false}
-                          type={3}
-                        />
-                      )}
-                      keyExtractor={item => item.id}
-                    />
-                  </Row>
-                </ScrollView>
-              </Row>
+             {this.renderTransactionTypePicker()}
+             {this.state.isLoading ? <Loader /> : this.renderPayment()}
             </Grid>
           </Content>
         </Container>
@@ -198,6 +324,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     fontFamily: "Roboto"
+  },
+  message: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
   },
   buttonGroupSection: {
     height: 60

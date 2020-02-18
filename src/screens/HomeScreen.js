@@ -32,7 +32,7 @@ class HomeScreen extends React.Component {
     };
 
     addPaymentHandler = async () =>{
-        this.props.navigation.navigate('SupplierPayment');
+        this.props.navigation.navigate("AddPayment",{formType:0});
     }
     
     render() {

@@ -48,8 +48,7 @@ class SupplierScreen extends React.Component {
   };
 
   editSupplier(data) {
-    console.log("data" + data);
-   // this.props.navigation.navigate("AddSupplier",{formType:1,supplier:data});
+    this.props.navigation.navigate("AddSupplier",{formType:1,supplier:data});
   }
 
   _onChangeText = key => text => {
@@ -59,8 +58,14 @@ class SupplierScreen extends React.Component {
     this.SearchFilterFunction(text)
   };
 
-  componentDidMount() {
+  async componentDidMount() {
     this.getSupplier();
+    
+  }
+
+
+  async componentDidUpdate(){
+   
   }
 
   SearchFilterFunction(text) {
@@ -80,7 +85,6 @@ class SupplierScreen extends React.Component {
       let userId = await userPreferences.getPreferences(userPreferences.userId);
       this.setState({ isLoading: true });
       let supplierData = await SupplierService.getSupplierList(userId);
-      //  console.log("auth : ", auth);
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;

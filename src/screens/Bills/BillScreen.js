@@ -78,11 +78,10 @@ class BillScreen extends React.Component {
   };
 
   _RedirectBillAdd = async () => {
-    this.props.navigation.navigate("AddBill");
+    this.props.navigation.navigate("AddBill",{formType:0});
   };
 
   editBill(data) {
-    console.log("data =>",data);
     this.props.navigation.navigate("AddBill",{formType:1,billInfo:data});
   }
 
@@ -123,9 +122,14 @@ class BillScreen extends React.Component {
     this.setFilterModalVisible(false);
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     this._getSuppliers();
     this._getBills();
+   
+  }
+
+  async componentDidUpdate(){
+    
   }
 
   _getBills = async () => {
@@ -144,7 +148,6 @@ class BillScreen extends React.Component {
         supplierId: this.state.supplierId,
         userId: userId
       };
-      console.log("formData : ", formData);
       this.setState({ isLoading: true });
       let serverCallBill = await BillService.getBillList(formData);
 
@@ -184,7 +187,6 @@ class BillScreen extends React.Component {
       let userId = await userPreferences.getPreferences(userPreferences.userId);
       this.setState({ isLoading: true });
       let supplierData = await SupplierService.getSupplierList(userId);
-      //  console.log("auth : ", auth);
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;

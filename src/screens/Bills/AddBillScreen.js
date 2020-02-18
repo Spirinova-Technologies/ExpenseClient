@@ -83,7 +83,6 @@ class AddBillScreen extends React.Component {
     if (formType != undefined) {
       if (formType == 1) {
         const billInfo = navigation.getParam("billInfo");
-        console.log("billInfo date :",new Date(billInfo.bill_date));
         this.setState({
           billInfo: billInfo,
           formType: formType,

@@ -193,7 +193,14 @@ class SignupScreen extends React.Component {
                 userPreferences.address,
                 auth.users.address
               );
-
+              userPreferences.setPreferences(
+                userPreferences.businessName,
+                auth.users.business_name
+              );
+              userPreferences.setPreferences(
+                userPreferences.profilePhoto,
+                auth.users.profile_photo
+              );
               this.setState({ isLoading: false });
               this.props.navigation.navigate("App");
             }

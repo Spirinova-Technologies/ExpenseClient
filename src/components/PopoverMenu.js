@@ -11,12 +11,9 @@ import { Icon, Button } from "native-base";
 class PopoverMenu extends Component {
   constructor(props) {
     super(props);
-
-    this.click1 = this.click1.bind(this);
+    this.optionHandler = this.optionHandler.bind(this);
   }
-
   _menu = null;
-
   setMenuRef = ref => {
     this._menu = ref;
   };
@@ -26,10 +23,9 @@ class PopoverMenu extends Component {
   hideMenu = () => {
     this._menu.hide();
   };
-  click1 = value => {
+  optionHandler = value => {
     this._menu.hide();
-    console.log("val :" + value.text);
-    // this.props.option1Click();
+    this.props.optionClickHandler(value);
   };
   render() {
     return (
@@ -44,7 +40,7 @@ class PopoverMenu extends Component {
         >
           {this.props.menuItems.map((value, index) => {
             return (
-              <MenuItem onPress={() => this.click1(value)} key={index}>
+              <MenuItem onPress={() => this.optionHandler(value)} key={index}>
                 {value.text}
               </MenuItem>
             );

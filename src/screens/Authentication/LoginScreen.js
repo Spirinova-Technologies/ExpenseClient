@@ -143,6 +143,14 @@ class LoginScreen extends React.Component {
             userPreferences.address,
             auth.users.address
           );
+          userPreferences.setPreferences(
+            userPreferences.businessName,
+            auth.users.business_name
+          );
+          userPreferences.setPreferences(
+            userPreferences.profilePhoto,
+            auth.users.profile_photo
+          );
           this.props.navigation.navigate("App");
         }
       }

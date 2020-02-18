@@ -47,7 +47,8 @@ class AddSupplierScreen extends React.Component {
       gstError: "",
       phoneError: "",
       cityError: "",
-      addressError: ""
+      addressError: "",
+      isLoading:false
     };
   }
 
@@ -74,7 +75,6 @@ class AddSupplierScreen extends React.Component {
     if (formType != undefined) {
       if (formType == 1) {
         const supplier = navigation.getParam("supplier");
-        console.log(supplier);
         this.setState({
           supplier: supplier,
           formType: formType,
@@ -170,14 +170,11 @@ class AddSupplierScreen extends React.Component {
           formData.id = this.state.supplier.id;
         }
 
-        console.log("formData : ", formData);
-
         let serverCallSupplier =
           this.state.formType == 0
             ? await SupplierService.addSupplier(formData)
             : await SupplierService.updateSupplier(formData);
         this.setState({ isLoading: false });
-        console.log("serverCallSupplier : ", serverCallSupplier);
         if (serverCallSupplier.status == 0) {
           var msg = serverCallSupplier.msg;
           utility.showAlert(msg);

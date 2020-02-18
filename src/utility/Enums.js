@@ -9,5 +9,16 @@ export default Enums = {
     { key: 1, text: "Unpaid" },
     { key: 2, text: "Paid" },
     { key: 3, text: "Partial" },
-  ]
+  ],
+  paymentType: [
+    { key: 1, text: "General Expense" },
+    { key: 2, text: "Petty Cash" },
+    { key: 3, text: "Supplier Payment" },
+  ],
+  paymentMode: [
+    { key: 1, text: "Cash" },
+    { key: 2, text: "NEFT" },
+    { key: 3, text: "Wallet" },
+    { key: 4, text: "Others" },
+  ],
 };

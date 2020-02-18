@@ -61,24 +61,9 @@ const EASideBar = props => {
       routeName: "Home"
     },
     {
-      key: "Supplier",
-      params: undefined,
-      routeName: "Supplier"
-    },
-    {
-      key: "Bills",
-      params: undefined,
-      routeName: "Bills"
-    },
-    {
-      key: "Passbook",
-      params: undefined,
-      routeName: "Passbook"
-    },
-    {
       key: "Shops",
       params: undefined,
-      routeName: "ShopList"
+      routeName: "Shops"
     },
     {
       key: "Profile",
@@ -86,9 +71,9 @@ const EASideBar = props => {
       routeName: "Profile"
     },
     {
-      key: "About",
+      key: "Support",
       params: undefined,
-      routeName: "About"
+      routeName: "Support"
     }
   ];
   return (

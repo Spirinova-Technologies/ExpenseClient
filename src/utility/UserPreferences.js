@@ -12,7 +12,9 @@ class UserPreferences {
     this.emailId  = 'emailId',
     this.phoneNumber  = 'phoneNumber',
     this.address  = 'address',
-    this.firebaseToken  = 'firebaseToken'
+    this.businessName  = 'businessName',
+    this.firebaseToken  = 'firebaseToken',
+    this.profilePhoto  = 'profilePhoto'
     }
 
     setPreferences = (key,value) =>{

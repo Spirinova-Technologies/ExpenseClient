@@ -8,13 +8,13 @@ import MainScreen from './MainScreen';
 
 import SupplierScreen from './Supplier/SupplierScreen';
 import AddSupplierScreen from './Supplier/AddSupplierScreen';
-import AddSupplierPaymentScreen from './Supplier/AddSupplierPaymentScreen';
 
 
 import BillScreen from './Bills//BillScreen';
 import AddBillScreen from './Bills/AddBillScreen';
 
 import PassbookScreen from './Passbook/PassbookScreen';
+import AddPaymentScreen from './Passbook/AddPaymentScreen';
 
 import AddShopScreen from './Shops/AddShop';
 import ShopScreen from './Shops/ShopScreen';
@@ -37,7 +37,7 @@ export {
     PassbookScreen,
     BillScreen,
     AddSupplierScreen,
-    AddSupplierPaymentScreen,
+    AddPaymentScreen,
     AddBillScreen,
     AddShopScreen,
     ShopScreen,

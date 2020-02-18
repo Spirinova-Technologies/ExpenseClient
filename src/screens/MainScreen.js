@@ -31,20 +31,52 @@ class MainScreen extends React.Component {
     headerShown: false
   };
 
-  state = {
-    modalVisible: false,
-    arrMenuItem: [
-      { key: 0, text: "Add Bill" },
-      { key: 1, text: "Add Expense" },
-      { key: 2, text: "Add Money" },
-      { key: 3, text: "Add Supplier" },
-      { key: 4, text: "Add Supplier payment" },
-      { key: 5, text: "Import Suppliers" }
-    ]
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      modalVisible: false,
+      arrMenuItem: [
+        { key: 0, text: "Add Bill" },
+        { key: 1, text: "Add Payment" },
+        { key: 2, text: "Add Money" },
+        { key: 3, text: "Add Supplier" },
+        { key: 4, text: "Import Suppliers" }
+      ]
+    };
+    this.optionClickHandler = this.optionClickHandler.bind(this);
+  }
 
   setModalVisible(visible) {
     this.setState({ modalVisible: visible });
+  }
+
+  optionClickHandler(value) {
+    switch (value.key) {
+      case 0:
+        console.log("key :" + value.key);
+        this.props.navigation.navigate("AddBill",{formType:0});
+        // code block
+        break;
+      case 1:
+        this.props.navigation.navigate("AddPayment",{formType:0});
+        // code block
+        break;
+      case 2:
+        // this.props.navigation.navigate("AddBill",{formType:0});
+        // code block
+        break;
+      case 3:
+        this.props.navigation.navigate("AddSupplier",{formType:0});
+        // code block
+        break;
+      case 4:
+        // code block
+        break;
+      default:
+      // code block
+    }
+    console.log("val :" + value.text);
+    
   }
 
   render() {
@@ -69,10 +101,7 @@ class MainScreen extends React.Component {
                 menustyle={styles.menuBar}
                 textStyle={styles.menuText}
                 menuItems={this.state.arrMenuItem}
-                option1Click={() => {}}
-                option2Click={() => {}}
-                option3Click={() => {}}
-                option4Click={() => {}}
+                optionClickHandler={this.optionClickHandler}
               />
             </Right>
           </Header>

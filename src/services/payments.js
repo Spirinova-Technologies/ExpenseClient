@@ -5,16 +5,20 @@ import WebUrlUtility from "./WebUrlUtility";
 /**
  * @description This will handle the user related network requests.
  */
-class BillService extends BaseService {
+class PaymentService extends BaseService {
   constructor() {
     super();
   }
 
   /**
-   * @description This function will call the add Bill api.
+   * @description This function will call the add payment api.
    */
-  addBill = bill => {
-    return this.webServiceCall(`${this.base}${WebUrlUtility.addBill}`, bill, 1)
+  addPayment = payment => {
+    return this.webServiceCall(
+      `${this.base}${WebUrlUtility.addPayment}`,
+      payment,
+      1
+    )
       .then(response => {
         return response.data;
       })
@@ -24,12 +28,12 @@ class BillService extends BaseService {
   };
 
   /**
-   * @description This function will call the update Bill api.
+   * @description This function will call the update payment api.
    */
-  updateBill = bill => {
+  updatePayment = payment => {
     return this.webServiceCall(
-      `${this.base}${WebUrlUtility.updateBill}/${bill.id}`,
-      bill,
+      `${this.base}${WebUrlUtility.updatePayment}/${payment.id}`,
+      payment,
       1
     )
       .then(response => {
@@ -43,9 +47,9 @@ class BillService extends BaseService {
   /**
    * @description - This service will give suppliers bill list
    */
-  getSupplierBills = supplierId => {
+  getCategories = userId => {
     return this.webServiceCall(
-      `${this.base}${WebUrlUtility.supplierBillsList}/${supplierId}`,
+      `${this.base}${WebUrlUtility.categoryList}`,
       {},
       0
     )
@@ -58,12 +62,12 @@ class BillService extends BaseService {
   };
 
   /**
-   * @description - This service will get list of Bill
+   * @description - This service will get list of payment
    */
-  getBillList = billFilter => {
+  getPaymentList = paymentFilter => {
     return this.webServiceCall(
-      `${this.base}${WebUrlUtility.billList}`,
-      billFilter,
+      `${this.base}${WebUrlUtility.paymentList}`,
+      paymentFilter,
       1
     )
       .then(data => {
@@ -75,7 +79,7 @@ class BillService extends BaseService {
   };
 }
 
-const billService = new BillService();
+const paymentService = new PaymentService();
 
-export default billService;
-export { billService, BillService };
+export default paymentService;
+export { paymentService, PaymentService };
