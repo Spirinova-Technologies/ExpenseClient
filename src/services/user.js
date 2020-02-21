@@ -40,12 +40,14 @@ class UserService extends BaseService {
  /**
    * @description This function will call the update user api.
    */
-  updateProfile = user => {
-    return this.webServiceCall(`${this.base}${WebUrlUtility.updateProfile}/${user.id}`, user, 1)
+  updateProfile = (user,userId) => {
+    return this.webServiceCall(`${this.base}${WebUrlUtility.updateProfile}/${userId}`, user, 2)
       .then(response => {
+       
         return response.data;
       })
       .catch(error => {
+       
         throw error;
       });
   };

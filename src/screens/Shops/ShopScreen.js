@@ -1,15 +1,21 @@
 import React from "react";
 import { ScrollView, StyleSheet, FlatList } from "react-native";
+import { DrawerActions } from "react-navigation-drawer";
 import {
   Container,
   Content,
   Button,
+  Header,
   View,
   Grid,
   Fab,
   Row,
   Col,
   Text,
+  Left,
+  Body,
+  Title,
+  Right,
   Picker,
   StyleProvider,
   Icon,
@@ -18,43 +24,70 @@ import {
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
-import {
-  EASingleListItem,
-} from "../../components";
+import { EASingleListItem } from "../../components";
 import ShopService from "../../services/shops";
 import { FabButtonPrimary, FormStyle } from "../../styles";
 import { userPreferences, utility } from "../../utility";
 import Loader from "../Shared/Loader";
-
 
 class ShopScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       shops: [],
+      userShopId: null,
       isLoading: false
     };
     this.shopDetail = this.shopDetail.bind(this);
+    this.shopSelected = this.shopSelected.bind(this);
   }
 
   static navigationOptions = {
     headerShown: false
   };
 
-  _RedirectShopAdd = async () => {
-    this.props.navigation.navigate("AddShop",{formType:0});
+  addShop = async () => {
+    this.props.navigation.navigate("AddShop", { formType: 0 });
   };
 
   shopDetail(shopInfo) {
-    this.props.navigation.navigate("ShopDetail",{shopInfo:shopInfo});
+    this.props.navigation.navigate("ShopDetail", { shopInfo: shopInfo });
   }
 
-  componentDidMount() {
-    this.getShops();
+  shopSelected = async shopInfo => {
+    console.log("shopId", shopInfo);
+    await userPreferences.setPreferences(
+      userPreferences.userShopId,
+      shopInfo.id + ""
+    );
+
+    await userPreferences.setPreferences(
+      userPreferences.userShopName,
+      shopInfo.shop_name + ""
+    );
+    
+    this.setState({ userShopId: shopInfo.id + "" });
+  };
+
+  async componentDidMount() {
+    this.props.navigation.addListener('willFocus', this.handleTabFocus)
+    let userShopId = await userPreferences.getPreferences(
+      userPreferences.userShopId
+    );
+    console.log("userShopId : ", userShopId);
+    if (userShopId != null) {
+      this.setState({ userShopId: userShopId });
+    }
+    
   }
+
+
+  handleTabFocus = () => {
+    this.getShops();
+    console.log("componentWillFocus");
+  };
 
   getShops = async () => {
-
     try {
       let userId = await userPreferences.getPreferences(userPreferences.userId);
       this.setState({ isLoading: true });
@@ -79,7 +112,7 @@ class ShopScreen extends React.Component {
     }
   };
 
-  _renderShops = () => {
+  renderShops = () => {
     if (this.state.shops.length == 0) {
       return (
         <View style={styles.message}>
@@ -89,7 +122,7 @@ class ShopScreen extends React.Component {
     } else {
       return (
         <Grid>
-          <Row style={styles.buttonGroupSection}></Row>
+          {/* <Row style={styles.buttonGroupSection}></Row> */}
           <Row>
             <ScrollView
               contentContainerStyle={{
@@ -100,12 +133,15 @@ class ShopScreen extends React.Component {
               <Row>
                 <FlatList
                   data={this.state.shops}
+                  extraData={this.state.userShopId}
                   renderItem={({ item }) => (
                     <EASingleListItem
                       data={item}
                       name={item.shop_name}
                       location={item.street}
                       pressHandler={this.shopDetail}
+                      selectHandler={this.shopSelected}
+                      selectedId={this.state.userShopId + ""}
                     />
                   )}
                   keyExtractor={item => item.id + ""}
@@ -122,21 +158,38 @@ class ShopScreen extends React.Component {
     return (
       <StyleProvider style={getTheme(commonColors)}>
         <Container>
+          <Header noShadow>
+            <Left>
+              {this.state.userShopId != null ? (
+                <Button
+                  transparent
+                  onPress={() => this.props.navigation.openDrawer()}
+                >
+                  <Icon name="menu" />
+                </Button>
+              ) : (
+                <></>
+              )}
+            </Left>
+            <Body>
+              <Title style={FormStyle.headerColor}>Shops</Title>
+            </Body>
+            <Right></Right>
+          </Header>
           <Content padder contentContainerStyle={styles.container}>
-            {this.state.isLoading ? <Loader /> : this._renderShops()}
-          
+            {this.state.isLoading ? <Loader /> : this.renderShops()}
           </Content>
           <View>
-              <Fab
-                direction="up"
-                containerStyle={{}}
-                style={styles.fabButton}
-                position="bottomRight"
-                onPress={this._RedirectShopAdd}
-              >
-                <Icon name="add" />
-              </Fab>
-            </View>
+            <Fab
+              direction="up"
+              containerStyle={{}}
+              style={styles.fabButton}
+              position="bottomRight"
+              onPress={this.addShop}
+            >
+              <Icon name="add" />
+            </Fab>
+          </View>
         </Container>
       </StyleProvider>
     );

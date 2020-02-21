@@ -45,6 +45,7 @@ class SettleBill extends Component {
       amount: "",
       amountError: "",
     };
+    this._submitSettleBillForm = this._submitSettleBillForm.bind(this);
   }
 
   componentDidMount() {
@@ -88,7 +89,7 @@ _submitSettleBillForm = () => {
   })
 
   if ( !amountError ) {
-    this.props.pressCancelHandler()
+    this.props.completionHandler(this.state.amount)
   }
 };
 

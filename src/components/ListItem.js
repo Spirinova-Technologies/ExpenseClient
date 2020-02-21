@@ -1,8 +1,14 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { Button, Icon, Text, Grid, Row, Col, View } from "native-base";
+import { Button, Icon, Text, Grid, Row, Col, View ,Thumbnail} from "native-base";
 
-import { isValid, userPreferences, utility, Enums } from "../utility";
+import {
+  isValid,
+  userPreferences,
+  utility,
+  Enums,
+  AppConstant
+} from "../utility";
 
 const EAListItem = ({
   supplier,
@@ -14,7 +20,8 @@ const EAListItem = ({
   creditText,
   showNegative,
   type,
-  pressHandler
+  pressHandler,
+  linkHandler
 }) => {
   if (type == 1) {
     //Supplier listing
@@ -52,14 +59,14 @@ const EAListItem = ({
           <Row
             style={[styles.row, thirdLine == false ? styles.displayNone : null]}
           >
-            <Button small rounded style={styles.listButton}>
+            <Button small rounded style={styles.listButton} onPress={() => linkHandler(supplier,1)}>
               <Icon type="MaterialIcons" name="phone" style={styles.iconText} />
             </Button>
-            <Button small rounded dark style={styles.listButton}>
-              <Icon
-                type="MaterialIcons"
-                name="message"
-                style={styles.iconText}
+            {/* ,{backgroundColor:'white'} */}
+            <Button small style={styles.imageButton} onPress={() => linkHandler(supplier,2)}>
+              <Thumbnail
+                source={AppConstant.ImageConstant.ic_whatsapp}
+                style={styles.iconImage}
               />
             </Button>
           </Row>
@@ -108,12 +115,16 @@ const EAListItem = ({
           <Col size={70}>
             <Text style={styles.title}>
               {Enums.paymentType.map((value, index) => {
-                return value.key == paymentInfo.transaction_type ? value.text:"";
+                return value.key == paymentInfo.transaction_type
+                  ? value.text
+                  : "";
               })}
             </Text>
           </Col>
           <Col size={30} style={styles.amountCol}>
-          <Text style={styles.amountText}>{paymentInfo.transaction_amount}</Text>
+            <Text style={styles.amountText}>
+              {paymentInfo.transaction_amount}
+            </Text>
           </Col>
         </Row>
         <Row style={styles.row}>
@@ -122,9 +133,7 @@ const EAListItem = ({
               <Text style={styles.subHeader}>{paymentInfo.display_date}</Text>
             </Row>
           </Col>
-          <Col style={styles.amountCol}>
-           
-          </Col>
+          <Col style={styles.amountCol}></Col>
         </Row>
       </Grid>
     );
@@ -146,11 +155,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "500",
+    textTransform: "capitalize",
     color: "#2e2e2e"
   },
   subHeader: {
     color: "#637381",
     fontSize: 15,
+    textTransform: "capitalize",
     fontWeight: "300"
   },
   subHeaderIcon: {
@@ -167,7 +178,17 @@ const styles = StyleSheet.create({
   iconText: {
     fontSize: 20,
     marginLeft: 0,
-    marginRight: 0
+    marginRight: 0,
+    alignSelf:'center'
+  },
+  imageButton:{
+    margin: 0,
+    height: 32,
+    width: 32,
+    backgroundColor:'white'
+  },
+  iconImage:{
+    alignSelf:'center'
   },
   amountText: {
     fontSize: 18,

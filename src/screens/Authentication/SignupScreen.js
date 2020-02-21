@@ -202,7 +202,7 @@ class SignupScreen extends React.Component {
                 auth.users.profile_photo
               );
               this.setState({ isLoading: false });
-              this.props.navigation.navigate("App");
+              this.props.navigation.navigate("Shops");
             }
           }
         }
@@ -234,14 +234,11 @@ class SignupScreen extends React.Component {
 
   _renderSignUp = () => {
     return (
-      <Content padder contentContainerStyle={styles.container}>
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: "space-between"
-          }}
-        >
-          <KeyboardAvoidingView>
+      <Content padder contentContainerStyle={{
+        flexGrow: 1,
+      }}>
+       
+          <KeyboardAvoidingView behavior="padding" enabled>
             <Grid>
               <Row size={30} style={styles.logoContainer}>
                 <Thumbnail
@@ -256,7 +253,7 @@ class SignupScreen extends React.Component {
               </Row>
               <Row size={70} style={styles.inputContainer}>
                 <EATextInput
-                  autoCapitalize="none"
+                  autoCapitalize="words"
                   value={this.state.user.firstName}
                   keyboardType="default"
                   placeholder="First Name"
@@ -269,7 +266,7 @@ class SignupScreen extends React.Component {
                   )}
                 />
                 <EATextInput
-                  autoCapitalize="none"
+                  autoCapitalize="words"
                   value={this.state.user.lastName}
                   keyboardType="default"
                   placeholder="Last Name"
@@ -282,7 +279,7 @@ class SignupScreen extends React.Component {
                   )}
                 />
                 <EATextInput
-                  autoCapitalize="none"
+                  autoCapitalize="words"
                   value={this.state.user.businessName}
                   keyboardType="default"
                   placeholder="Business Name"
@@ -297,6 +294,7 @@ class SignupScreen extends React.Component {
                 <EATextInput
                   autoCapitalize="none"
                   value={this.state.user.email}
+                  autoCompleteType="email"
                   keyboardType="email-address"
                   placeholder="Email"
                   onChangeText={this._onChangeText("email")}
@@ -305,6 +303,7 @@ class SignupScreen extends React.Component {
                 />
                 <EATextInput
                   autoCapitalize="none"
+                  autoCompleteType="tel"
                   value={this.state.user.phone}
                   keyboardType="number-pad"
                   placeholder="Phone Number"
@@ -354,14 +353,15 @@ class SignupScreen extends React.Component {
               </Row>
             </Grid>
           </KeyboardAvoidingView>
-        </ScrollView>
       </Content>
     );
   };
 
   _renderLoader = () => {
     return (
-      <Content padder contentContainerStyle={styles.container}>
+      <Content padder contentContainerStyle={{
+        flexGrow: 1,
+      }}>
         <EASpinner color="red" text="Signing up..." />
       </Content>
     );

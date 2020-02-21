@@ -37,11 +37,11 @@ class BillScreen extends React.Component {
   static navigationOptions = {
     headerShown: false
   };
+  
   constructor(props) {
     super(props);
     this.state = {
       selected: null,
-      billModalVisible: false,
       filterModalVisible: false,
       arrBills: [],
       arrSuppliers: [],
@@ -58,9 +58,11 @@ class BillScreen extends React.Component {
     this.filterCompletionHandler = this.filterCompletionHandler.bind(this);
   }
 
-  setBillModalVisible(visible) {
-    this.setState({ billModalVisible: visible });
-  }
+  handleTabFocus = () => {
+    console.log("got worked")
+    this.getSuppliers();
+    this.getBills();
+  };
 
   setFilterModalVisible(visible) {
     this.setState({ filterModalVisible: visible });
@@ -72,17 +74,28 @@ class BillScreen extends React.Component {
         supplierId: value
       },
       () => {
-        this._getBills();
+       
+        this.getBills();
       }
     );
   };
 
-  _RedirectBillAdd = async () => {
-    this.props.navigation.navigate("AddBill",{formType:0});
+  addBill = async () => {
+    this.props.navigation.navigate("AddBill", { formType: 0 });
   };
 
   editBill(data) {
-    this.props.navigation.navigate("AddBill",{formType:1,billInfo:data});
+    if(data.bill_status != 2){
+      this.props.navigation.navigate("AddBill", { formType: 1, billInfo: data });
+    }else{
+      Toast.show({
+        text: "The bill is settled.You cannot edit it.",
+        buttonText: "Okay",
+        type: "danger",
+        duration: 5000
+      });
+    }
+    
   }
 
   btnFilterTap(tabId) {
@@ -98,7 +111,7 @@ class BillScreen extends React.Component {
       });
     } else {
       this.setState({ fromDate: "", toDate: "", filterType: tabId }, () => {
-        this._getBills();
+        this.getBills();
       });
     }
   }
@@ -115,7 +128,7 @@ class BillScreen extends React.Component {
           settle: 0
         },
         () => {
-          this._getBills();
+          this.getBills();
         }
       );
     }
@@ -123,16 +136,13 @@ class BillScreen extends React.Component {
   }
 
   async componentDidMount() {
-    this._getSuppliers();
-    this._getBills();
-   
+    this.props.navigation.addListener('didFocus', this.handleTabFocus)
   }
 
-  async componentDidUpdate(){
-    
-  }
+  async componentDidUpdate() {}
 
-  _getBills = async () => {
+  getBills = async () => {
+    console.log("hitted ")
     try {
       this.setState({
         arrBills: [],
@@ -140,12 +150,15 @@ class BillScreen extends React.Component {
         settle: 0
       });
       let userId = await userPreferences.getPreferences(userPreferences.userId);
-
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
       var formData = {
         filterType: this.state.filterType,
         fromDate: this.state.fromDate,
         toDate: this.state.toDate,
         supplierId: this.state.supplierId,
+        shopId: userShopId,
         userId: userId
       };
       this.setState({ isLoading: true });
@@ -182,11 +195,17 @@ class BillScreen extends React.Component {
     }
   };
 
-  _getSuppliers = async () => {
+  getSuppliers = async () => {
     try {
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
       let userId = await userPreferences.getPreferences(userPreferences.userId);
       this.setState({ isLoading: true });
-      let supplierData = await SupplierService.getSupplierList(userId);
+      let supplierData = await SupplierService.getSupplierList(
+        userId,
+        userShopId
+      );
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
@@ -210,7 +229,7 @@ class BillScreen extends React.Component {
     }
   };
 
-  _renderSupplierPicker = () => {
+  renderSupplierPicker = () => {
     return (
       <Row style={styles.dropdownContainer}>
         <Icon
@@ -240,7 +259,7 @@ class BillScreen extends React.Component {
     );
   };
 
-  _renderFilterBill = () => {
+  renderFilterBill = () => {
     return (
       <View>
         <Modal
@@ -260,27 +279,9 @@ class BillScreen extends React.Component {
     );
   };
 
-  _renderSettleBill = () => {
-    return (
-      <View>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={this.state.billModalVisible}
-          style={styles.modal}
-          onRequestClose={() => {}}
-        >
-          <View style={styles.modal}>
-            <SettleBill
-              pressCancelHandler={this.pressCancelHandler}
-            ></SettleBill>
-          </View>
-        </Modal>
-      </View>
-    );
-  };
+ 
 
-  _renderBills = () => {
+  renderBills = () => {
     if (this.state.arrBills.length == 0) {
       return (
         <View style={styles.message}>
@@ -294,12 +295,12 @@ class BillScreen extends React.Component {
             <EABricks
               brick1={{
                 text1: this.state.unSettle,
-                text2: "unsetteled",
+                text2: "unsettled",
                 color: "#FE3852"
               }}
               brick2={{
                 text1: this.state.settle,
-                text2: "setteled",
+                text2: "settled",
                 color: "#6DD400"
               }}
               brick3={{
@@ -347,11 +348,11 @@ class BillScreen extends React.Component {
                   <EAButtonGroup pressHandler={this.btnFilterTap} />
                 </Row>
                 {this.state.arrSuppliers.length != 0 ? (
-                  this._renderSupplierPicker()
+                  this.renderSupplierPicker()
                 ) : (
                   <></>
                 )}
-                {this.state.isLoading ? <Loader /> : this._renderBills()}
+                {this.state.isLoading ? <Loader /> : this.renderBills()}
               </Grid>
             </Content>
             <View>
@@ -360,16 +361,15 @@ class BillScreen extends React.Component {
                 containerStyle={{}}
                 style={styles.fabButton}
                 position="bottomRight"
-                onPress={this._RedirectBillAdd}
+                onPress={this.addBill}
               >
                 <Icon name="add" />
               </Fab>
             </View>
           </Container>
         </StyleProvider>
-
-        {this.state.billModalVisible ? this._renderSettleBill() : <></>}
-        {this.state.filterModalVisible ? this._renderFilterBill() : <></>}
+        
+        {this.state.filterModalVisible ? this.renderFilterBill() : <></>}
       </>
     );
   }

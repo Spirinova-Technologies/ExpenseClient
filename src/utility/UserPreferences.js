@@ -14,7 +14,9 @@ class UserPreferences {
     this.address  = 'address',
     this.businessName  = 'businessName',
     this.firebaseToken  = 'firebaseToken',
-    this.profilePhoto  = 'profilePhoto'
+    this.profilePhoto  = 'profilePhoto',
+    this.userShopId = 'userShopId'
+    this.userShopName = 'userShopName'
     }
 
     setPreferences = (key,value) =>{
@@ -35,6 +37,8 @@ class UserPreferences {
         AsyncStorage.removeItem(this.phoneNumber)
         AsyncStorage.removeItem(this.address)
         AsyncStorage.removeItem(this.firebaseToken)
+        AsyncStorage.removeItem(this.userShopId)
+        AsyncStorage.removeItem(this.userShopName)
     }
 
     clear(){

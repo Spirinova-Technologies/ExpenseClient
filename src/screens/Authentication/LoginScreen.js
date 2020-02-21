@@ -48,7 +48,13 @@ class LoginScreen extends React.Component {
     let userId = await userPreferences.getPreferences(userPreferences.userId);
     console.log("userId : ", userId);
     if (userId != null) {
-      this.props.navigation.navigate("App");
+        let userShopId = await userPreferences.getPreferences(userPreferences.userShopId);
+    console.log("userShopId : ", userShopId);
+        if (userShopId != null) {
+          this.props.navigation.navigate("App");
+        }else{
+          this.props.navigation.navigate("Shops");
+        }
     }
   };
 
@@ -107,7 +113,7 @@ class LoginScreen extends React.Component {
           email_id: this.state.email,
           password: this.state.password
         });
-      //  console.log("auth : ", auth);
+        console.log("auth : ", auth);
         this.setState({ isLoading: false });
         if (auth.status == 0) {
           var msg = auth.msg;
@@ -151,7 +157,8 @@ class LoginScreen extends React.Component {
             userPreferences.profilePhoto,
             auth.users.profile_photo
           );
-          this.props.navigation.navigate("App");
+          this.props.navigation.navigate("Shops");
+          //this.props.navigation.navigate("App");
         }
       }
     } catch (error) {
@@ -198,6 +205,7 @@ class LoginScreen extends React.Component {
         <View style={styles.inputContainer}>
           <EATextInput
             autoCapitalize="none"
+            autoCompleteType="email"
             value={this.state.email}
             keyboardType="email-address"
             placeholder="Email"

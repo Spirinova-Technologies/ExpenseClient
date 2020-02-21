@@ -62,16 +62,16 @@ class BaseService {
         const serviceResponse = await axios
           .post(url, options)
           .then(response => {
-          //  console.log("response.data : ",response.data);
+            console.log("response.data : ",response.data);
             return Promise.resolve(response)
           })
           .catch(error => {
             //return Promise.reject(error)
-          //  console.log("response error: ",error);
+            console.log("response error: ",error);
             throw "Something went wrong.Please try again.";
           });
 
-       //   console.log("serviceResponse : ",serviceResponse.data);
+          console.log("serviceResponse : ",serviceResponse.data);
           return serviceResponse
 
       } catch (error) {
@@ -85,16 +85,18 @@ class BaseService {
         const serviceResponse = await axios
           .post(url, options)
           .then(response => {
+            console.log("response : ", response);
           //  console.log("response.data : ",response.data);
             return Promise.resolve(response)
           })
           .catch(error => {
+            console.log("error : ", error);
             //return Promise.reject(error)
         //    console.log("response error: ",error);
             throw "Something went wrong.Please try again.";
           });
 
-          //console.log("serviceResponse : ",serviceResponse.data);
+          console.log("serviceResponse : ",serviceResponse.data);
           return serviceResponse
 
       } catch (error) {

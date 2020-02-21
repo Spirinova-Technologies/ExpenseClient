@@ -6,9 +6,9 @@ export default Enums = {
     { key: 4, text: "Add Money" }
   ],
   billStatus: [
-    { key: 1, text: "Unpaid" },
-    { key: 2, text: "Paid" },
-    { key: 3, text: "Partial" },
+    { key: 1, text: "Unsettled" },
+    { key: 2, text: "Settled" },
+    { key: 3, text: "Partially Settled" },
   ],
   paymentType: [
     { key: 1, text: "General Expense" },

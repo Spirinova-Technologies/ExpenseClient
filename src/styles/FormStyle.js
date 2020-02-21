@@ -10,8 +10,8 @@ export const FormStyle = StyleSheet.create({
         flexDirection: "column",
         paddingLeft: 15,
         paddingRight: 15,
-        paddingTop: 15,
-        paddingBottom: 15
+        paddingTop: 5,
+        paddingBottom: 5
       },
       largeButtonText:{
         fontSize: 20,

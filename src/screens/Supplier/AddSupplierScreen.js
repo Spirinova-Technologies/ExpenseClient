@@ -26,7 +26,7 @@ import {
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
-import { ToolbarHeader } from "../../styles";
+import { FormStyle } from "../../styles";
 import { EATextInput, EATextLabel } from "../../components";
 import { isValid, userPreferences, utility } from "../../utility";
 import Loader from "../Shared/Loader";
@@ -48,7 +48,7 @@ class AddSupplierScreen extends React.Component {
       phoneError: "",
       cityError: "",
       addressError: "",
-      isLoading:false
+      isLoading: false
     };
   }
 
@@ -56,13 +56,13 @@ class AddSupplierScreen extends React.Component {
     headerShown: false
   };
 
-  _onChangeText = key => text => {
+  onChangeText = key => text => {
     this.setState({
       [key]: text
     });
   };
 
-  _onBlurText = (validatorKey, errorKey, stateKey) => () => {
+  onBlurText = (validatorKey, errorKey, stateKey) => () => {
     this.setState({
       [errorKey]: isValid(validatorKey, this.state[stateKey])
     });
@@ -96,7 +96,7 @@ class AddSupplierScreen extends React.Component {
     let status = { valid: true, message: "" };
     let nameError = isValid("name", this.state.name);
     let phoneError = isValid("phone", this.state.phone);
-    let gstError = isValid("required", this.state.gstNumber);
+    let gstError = isValid("gstinNumber", this.state.gstNumber);
     let addressError = isValid("required", this.state.address);
     let cityError = isValid("required", this.state.city);
 
@@ -134,7 +134,7 @@ class AddSupplierScreen extends React.Component {
     return promise;
   };
 
-  _submitSupplierForm = async () => {
+  submitSupplierForm = async () => {
     try {
       let status = await this.validate();
       if (!status.valid) {
@@ -151,18 +151,16 @@ class AddSupplierScreen extends React.Component {
           userPreferences.userId
         );
 
-        // let shopId = await userPreferences.getPreferences(
-        //   userPreferences.shopId
-        // );
-
+        let userShopId = await userPreferences.getPreferences(
+          userPreferences.userShopId
+        );
         var formData = {
           supplier_name: this.state.name,
           supplier_gstin_number: this.state.gstNumber,
           supplier_address: this.state.address,
           supplier_city: this.state.city,
           supplier_phone: this.state.phone,
-          //  shop_id: shopId,
-          shop_id: 2,
+          shop_id: userShopId,
           userId: userId
         };
 
@@ -211,92 +209,91 @@ class AddSupplierScreen extends React.Component {
     }
   };
 
-  _renderAddSupplier = () => {
+  renderAddSupplier = () => {
     return (
       <>
-        <Content padder contentContainerStyle={styles.container}>
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              justifyContent: "space-between"
-            }}
-          >
-            <KeyboardAvoidingView>
-              <Grid>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Contact Number"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.phone}
-                    keyboardType="number-pad"
-                    onBlur={this._onBlurText("phone", "phoneError", "phone")}
-                    error={this.state.phoneError}
-                    onChangeText={this._onChangeText("phone")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Supplier Name"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.name}
-                    keyboardType="default"
-                    error={this.state.nameError}
-                    onBlur={this._onBlurText("name", "nameError", "name")}
-                    onChangeText={this._onChangeText("name")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"GST Number"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.gstNumber}
-                    keyboardType="default"
-                    error={this.state.gstError}
-                    onBlur={this._onBlurText(
-                      "required",
-                      "gstError",
-                      "gstNumber"
-                    )}
-                    onChangeText={this._onChangeText("gstNumber")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Business Address"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.address}
-                    multiline={true}
-                    numberOfLines={3}
-                    maxLength={130}
-                    keyboardType="default"
-                    error={this.state.addressError}
-                    onBlur={this._onBlurText(
-                      "required",
-                      "addressError",
-                      "address"
-                    )}
-                    onChangeText={this._onChangeText("address")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Street/City"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.city}
-                    keyboardType="default"
-                    error={this.state.cityError}
-                    onBlur={this._onBlurText("required", "cityError", "city")}
-                    onChangeText={this._onChangeText("city")}
-                  />
-                </Row>
-              </Grid>
-            </KeyboardAvoidingView>
-          </ScrollView>
+        <Content
+          padder
+          contentContainerStyle={{
+            flexGrow: 1
+          }}
+        >
+          <KeyboardAvoidingView behavior="padding" enabled>
+            <Grid>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Contact Number"} />
+                <EATextInput
+                  autoCapitalize="none"
+                  value={this.state.phone}
+                  keyboardType="phone-pad"
+                  contextMenuHidden={true}
+                  onBlur={this.onBlurText("phone", "phoneError", "phone")}
+                  error={this.state.phoneError}
+                  onChangeText={this.onChangeText("phone")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Supplier Name"} />
+                <EATextInput
+                  autoCapitalize="words"
+                  value={this.state.name}
+                  keyboardType="default"
+                  error={this.state.nameError}
+                  onBlur={this.onBlurText("name", "nameError", "name")}
+                  onChangeText={this.onChangeText("name")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"GST Number"} />
+                <EATextInput
+                  autoCapitalize="characters"
+                  value={this.state.gstNumber}
+                  keyboardType="default"
+                  error={this.state.gstError}
+                  onBlur={this.onBlurText(
+                    "gstinNumber",
+                    "gstError",
+                    "gstNumber"
+                  )}
+                  onChangeText={this.onChangeText("gstNumber")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Street/City"} />
+                <EATextInput
+                  autoCapitalize="words"
+                  value={this.state.city}
+                  keyboardType="default"
+                  error={this.state.cityError}
+                  onBlur={this.onBlurText("required", "cityError", "city")}
+                  onChangeText={this.onChangeText("city")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Business Address"} />
+                <EATextInput
+                  autoCapitalize="sentences"
+                  value={this.state.address}
+                  keyboardType="default"
+                  error={this.state.addressError}
+                  onBlur={this.onBlurText(
+                    "required",
+                    "addressError",
+                    "address"
+                  )}
+                  onChangeText={this.onChangeText("address")}
+                />
+              </Row>
+            </Grid>
+          </KeyboardAvoidingView>
         </Content>
         <Footer>
           <FooterTab>
-            <Button full onPress={this._submitSupplierForm}>
-              <Text> {this.state.formType == 0 ? "Add Supplier" : "Update"}</Text>
+            <Button full onPress={this.submitSupplierForm}>
+              <Text>
+                {" "}
+                {this.state.formType == 0 ? "Add Supplier" : "Update"}
+              </Text>
             </Button>
           </FooterTab>
         </Footer>
@@ -318,32 +315,17 @@ class AddSupplierScreen extends React.Component {
               </Button>
             </Left>
             <Body>
-              <Title style={styles.headerColor}>
+              <Title style={FormStyle.headerColor}>
                 {this.state.formType == 0 ? "Add Supplier" : "Edit Supplier"}
               </Title>
             </Body>
             <Right />
           </Header>
-          {this.state.isLoading ? <Loader /> : this._renderAddSupplier()}
+          {this.state.isLoading ? <Loader /> : this.renderAddSupplier()}
         </Container>
       </StyleProvider>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFF"
-  },
-  headerColor: ToolbarHeader,
-  InputSection: {
-    flexDirection: "column",
-    paddingLeft: 15,
-    paddingRight: 15,
-    paddingTop: 15,
-    paddingBottom: 15
-  }
-});
 
 export default AddSupplierScreen;

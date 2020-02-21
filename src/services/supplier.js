@@ -41,8 +41,8 @@ class SupplierService extends BaseService {
   /**
    * @description - This service will get list of supplier
    */
-  getSupplierList = userId => {
-    return this.webServiceCall(`${this.base}${WebUrlUtility.supplierList}/${userId}`, {}, 0)
+  getSupplierList = (userId,shopId) => {
+    return this.webServiceCall(`${this.base}${WebUrlUtility.supplierList}/${userId}/${shopId}`, {}, 0)
       .then(data => {
         return data.data;
       })

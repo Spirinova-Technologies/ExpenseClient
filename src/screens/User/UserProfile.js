@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { StyleSheet, Image, Platform } from "react-native";
+import { StyleSheet, Image, Platform,AsyncStorage } from "react-native";
 import {
   Container,
   Header,
@@ -19,6 +19,7 @@ import {
   Thumbnail,
   View,
   H1,
+  Toast,
   StyleProvider
 } from "native-base";
 
@@ -28,7 +29,7 @@ import * as ImagePicker from "expo-image-picker";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
 import { ToolbarHeader, FormStyle } from "../../styles";
-import { isValid, userPreferences, utility } from "../../utility";
+import { isValid, userPreferences, utility,createFormData } from "../../utility";
 import Loader from "../Shared/Loader";
 import AppConstant from "../../utility/AppConstant";
 import UserService from "../../services/user";
@@ -63,7 +64,7 @@ class UserProfile extends Component {
     }
   };
 
-  _pickImage = async () => {
+  selectImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsMultipleSelection: true,
@@ -72,9 +73,111 @@ class UserProfile extends Component {
     });
 
     if (!result.cancelled) {
-      console.log(result.uri);
-      this.setState({ profileImage: result.uri, profileImageObject: result });
+      console.log(" image object : ",result);
+      this.setState({ profileImage: result.uri, profileImageObject: result },()=>{
+       // this.updateProfile()
+      });
+      
     }
+  };
+
+  updateProfile = async () => {
+    if(this.state.profileInfo == null){
+      return
+    }
+    try {
+      this.setState({ isLoading: true });
+
+      let userId = await userPreferences.getPreferences(userPreferences.userId);
+
+      var formData = {
+        first_name: this.state.profileInfo.first_name,
+        last_name: this.state.profileInfo.last_name,
+        password:"Apple4004",
+        phone_number: this.state.profileInfo.phone_number,
+        address: this.state.profileInfo.address == undefined ? "":this.state.profileInfo.address,
+        business_name: this.state.profileInfo.business_name,
+        id: userId
+      };
+
+      let multipartData = formData;
+        if(this.state.profileImageObject != null){
+          multipartData = await createFormData('profile_photo',this.state.profileImageObject,formData)
+          multipartData.append("body",formData)
+        }
+      console.log("formData : ", multipartData);
+
+      let serverCallUser = await UserService.updateProfile(multipartData,formData.id);
+      this.setState({ isLoading: false });
+      if (serverCallUser.status == 0) {
+        var msg = serverCallUser.msg;
+        utility.showAlert(msg);
+      } else {
+     //  this.getProfile()
+        var msg = serverCallUser.msg;
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "success",
+          duration: 5000
+        });
+      }
+    } catch (error) {
+      this.setState({ isLoading: false }, () => {
+        Toast.show({
+          text:
+            error && error.message
+              ? error.message
+              : error || "Not Valid Error!",
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
+      });
+    }
+  };
+
+
+  updateProfileFetch = async () =>{
+
+    let userId = await userPreferences.getPreferences(userPreferences.userId);
+
+      var formData = {
+        first_name:this.state.profileInfo.first_name,
+        last_name:this.state.profileInfo.last_name,
+        password:"Apple4004",
+        phone_number:this.state.profileInfo.phone_number,
+        address:this.state.profileInfo.address,
+        // profile_photo: this.state.profileInfo.profile_photo,
+        business_name:this.state.profileInfo.business_name,
+        id: userId
+      };
+      let token = await AsyncStorage.getItem("authToken");
+
+      
+      multipartFormData = await createFormData('profile_photo',this.state.profileImageObject, formData)
+      console.log("multipartFormData : ",multipartFormData)
+
+    fetch("http://3.12.226.80:3000/api/users/update/"+userId, {
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'multipart/formdata',
+      },
+      method: "POST",
+      body: multipartFormData
+    })
+      .then(response => {
+        console.log("responsse", response); response.json()
+      })
+      .then(response => {
+        console.log("upload succes", response);
+        alert("Upload success!");
+      
+      })
+      .catch(error => {
+        console.log("upload error", error);
+        alert("Upload failed!");
+      });
   };
 
   getProfile = async () => {
@@ -92,7 +195,7 @@ class UserProfile extends Component {
           this.setState({
             profileInfo: userData.userInfo,
             profileImage:
-              userData.userInfo != null ? userData.userInfo.profile_photo : null
+              userData.userInfo != null ? userData.basePathImage+userData.userInfo.profile_photo : null
           });
         }
       }
@@ -150,7 +253,7 @@ class UserProfile extends Component {
                   dark
                   transparent
                   style={styles.listButton}
-                  onPress={this._pickImage}
+                  onPress={this.selectImage}
                 >
                   <Icon
                     type="EvilIcons"
@@ -170,7 +273,7 @@ class UserProfile extends Component {
               </Col>
               <Col size={70} style={styles.rightCol}>
                 <Row>
-                  <Text style={styles.rightTitle}>
+                  <Text style={styles.userName}>
                     {this.state.profileInfo.first_name}{" "}
                     {this.state.profileInfo.last_name}
                   </Text>
@@ -282,6 +385,13 @@ const styles = StyleSheet.create({
   },
   rightTitle: {
     fontSize: 15,
+    color: "#2e2e2e",
+    fontWeight: "500",
+    alignSelf: "center"
+  },
+  userName:{
+    fontSize: 15,
+    textTransform: 'capitalize',
     color: "#2e2e2e",
     fontWeight: "500",
     alignSelf: "center"

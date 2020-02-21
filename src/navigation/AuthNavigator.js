@@ -41,8 +41,6 @@ const AppTabNavigation = createMaterialTopTabNavigator(
       style: {
         backgroundColor: "#FFF",
         color: "#637381"
-        // shadowOpacity: 0,
-        // elevation:0
       },
       indicatorStyle: {
         backgroundColor: "#FE3852"
@@ -108,12 +106,12 @@ const AppStackNavigation = createStackNavigator(
     },
     Shops: {
       screen: ShopScreen,
-      navigationOptions: {
-        header: ({ scene, previous, navigation }) => {
-          // const { options } = scene.descriptor;
-          return <MainScreen title={"Shops"} navigation={navigation} />;
-        }
-      }
+      // navigationOptions: {
+      //   header: ({ scene, previous, navigation }) => {
+      //     // const { options } = scene.descriptor;
+      //     return <MainScreen title={"Shops"} navigation={navigation} />;
+      //   }
+      // }
     },
     Support: {
       screen: AboutScreen,

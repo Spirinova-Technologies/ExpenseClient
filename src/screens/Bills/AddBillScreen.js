@@ -4,6 +4,7 @@ import {
   AsyncStorage,
   StyleSheet,
   ScrollView,
+  Modal,
   KeyboardAvoidingView
 } from "react-native";
 import {
@@ -27,20 +28,28 @@ import {
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
-import { ToolbarHeader } from "../../styles";
+import { FormStyle } from "../../styles";
 import {
   EATextInput,
   EATextLabel,
   EADatePicker,
   EAPicker
 } from "../../components";
-import { isValid, userPreferences, utility, Enums,createFormData } from "../../utility";
+import {
+  isValid,
+  userPreferences,
+  utility,
+  Enums,
+  createFormData
+} from "../../utility";
 import Constants from "expo-constants";
-import * as Permissions from 'expo-permissions';
-import * as ImagePicker from 'expo-image-picker';
+import * as Permissions from "expo-permissions";
+import * as ImagePicker from "expo-image-picker";
 import Loader from "../Shared/Loader";
+import SettleBill from "../Shared/SettleBill";
 import BillService from "../../services/bills";
 import SupplierService from "../../services/supplier";
+import PaymentService from "../../services/payments";
 
 class AddBillScreen extends React.Component {
   constructor(props) {
@@ -50,16 +59,18 @@ class AddBillScreen extends React.Component {
       hasCameraPermission: null,
       billInfo: null,
       arrSuppliers: [],
+      billModalVisible: false,
+      paymentAmount: 0,
       date: new Date(),
       billNumber: "",
-      billType: 0,
+      billType: 1,
       billStatus: 0,
       supplier: 0,
       amount: "",
       description: "",
       image: null,
-      billTypeError:"",
-      billStatusError:"",
+      billTypeError: "",
+      billStatusError: "",
       dateError: "",
       billError: "",
       amountError: "",
@@ -67,6 +78,8 @@ class AddBillScreen extends React.Component {
       description: "",
       imageError: ""
     };
+    this.SettleBillCompletionHandler = this.SettleBillCompletionHandler.bind(this);
+    this.pressCancelHandler = this.pressCancelHandler.bind(this);
   }
 
   static navigationOptions = {
@@ -74,7 +87,7 @@ class AddBillScreen extends React.Component {
   };
 
   async componentDidMount() {
-    this._getSuppliers();
+    this.getSuppliers();
     this.getPermissionAsync();
 
     const { navigation } = this.props;
@@ -83,21 +96,24 @@ class AddBillScreen extends React.Component {
     if (formType != undefined) {
       if (formType == 1) {
         const billInfo = navigation.getParam("billInfo");
+
+        //  console.log("new Date(billInfo.bill_date) : ",new Date(billInfo.bill_date))
         this.setState({
           billInfo: billInfo,
           formType: formType,
           date: new Date(billInfo.bill_date),
-          billNumber: billInfo.bill_number+"",
+          billNumber: billInfo.bill_number + "",
           billType: billInfo.bill_type,
           billStatus: billInfo.bill_status,
           supplier: billInfo.supplier_id,
-          amount: billInfo.bill_amount+"",
+          amount: billInfo.bill_amount + "",
           description: billInfo.bill_description,
           image: null
         });
       } else {
         this.setState({
-          formType: formType
+          formType: formType,
+          billStatus: 1
         });
       }
     }
@@ -113,7 +129,11 @@ class AddBillScreen extends React.Component {
     }
   };
 
-  _pickImage = async () => {
+  setBillModalVisible(visible) {
+    this.setState({ billModalVisible: visible });
+  }
+
+  selectImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsMultipleSelection: true,
@@ -126,19 +146,18 @@ class AddBillScreen extends React.Component {
     }
   };
 
-  _onChangeText = key => text => {
-
-    if(key == "supplier" && text != 0){
+  onChangeText = key => text => {
+    if (key == "supplier" && text != 0) {
       this.setState({
-        [key+"Error"]: ""
+        [key + "Error"]: ""
       });
-    }else if(key == "billType" && text != 0){
+    } else if (key == "billType" && text != 0) {
       this.setState({
-        [key+"Error"]: ""
+        [key + "Error"]: ""
       });
-    }else  if(key == "billStatus" && text != 0){
+    } else if (key == "billStatus" && text != 0) {
       this.setState({
-        [key+"Error"]: ""
+        [key + "Error"]: ""
       });
     }
 
@@ -147,31 +166,36 @@ class AddBillScreen extends React.Component {
     });
   };
 
-  _onBlurText = (validatorKey, errorKey, stateKey) => () => {
+  onBlurText = (validatorKey, errorKey, stateKey) => () => {
     this.setState({
       [errorKey]: isValid(validatorKey, this.state[stateKey])
     });
   };
 
-  _getSuppliers = async () => {
+  getSuppliers = async () => {
     try {
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
       let userId = await userPreferences.getPreferences(userPreferences.userId);
       this.setState({ isLoading: true });
-      let supplierData = await SupplierService.getSupplierList(userId);
+      let supplierData = await SupplierService.getSupplierList(
+        userId,
+        userShopId
+      );
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
         utility.showAlert(msg);
       } else {
-        if(supplierData.supplier != null){
-          var arrSupplier = []
+        if (supplierData.supplier != null) {
+          var arrSupplier = [];
           for (let i = 0; i < supplierData.supplier.length; i++) {
             let dicSupplier = {
-              key:supplierData.supplier[i].id,
-              text:supplierData.supplier[i].supplier_name,
+              key: supplierData.supplier[i].id,
+              text: supplierData.supplier[i].supplier_name
             };
             arrSupplier.push(dicSupplier);
-         
           }
           this.setState({
             arrSuppliers: arrSupplier
@@ -191,14 +215,14 @@ class AddBillScreen extends React.Component {
   };
 
   validate = async () => {
-
     let status = { valid: true, message: "" };
     let dateError = isValid("required", this.state.date);
     let amountError = isValid("required", this.state.amount);
     let billError = isValid("required", this.state.billNumber);
-    let supplierError = this.state.supplier == 0 ? "Please select supplier":"" ;
-    let billTypeError = this.state.billType == 0 ? "Please select bill type":"";
-    let billStatusError = this.state.billStatus == 0 ? "Please select bill status":"";
+    let supplierError =
+      this.state.supplier == 0 ? "Please select supplier" : "";
+    let billStatusError =
+      this.state.billStatus == 0 ? "Please select bill status" : "";
 
     let promise = new Promise((resolve, reject) => {
       this.setState(
@@ -207,7 +231,6 @@ class AddBillScreen extends React.Component {
           amountError,
           billError,
           supplierError,
-          billTypeError,
           billStatusError
         },
         () => {
@@ -223,9 +246,6 @@ class AddBillScreen extends React.Component {
           } else if (this.state.supplierError) {
             status.valid = false;
             status.message = supplierError;
-          } else if (this.state.billTypeError) {
-            status.valid = false;
-            status.message = billTypeError;
           } else if (this.state.billStatusError) {
             status.valid = false;
             status.message = billStatusError;
@@ -238,7 +258,9 @@ class AddBillScreen extends React.Component {
     return promise;
   };
 
-  _submitBillForm = async () => {
+  
+
+  submitBillForm = async () => {
     try {
       let status = await this.validate();
       if (!status.valid) {
@@ -254,18 +276,26 @@ class AddBillScreen extends React.Component {
         let userId = await userPreferences.getPreferences(
           userPreferences.userId
         );
-     
+        let userShopId = await userPreferences.getPreferences(
+          userPreferences.userShopId
+        );
+
         var billDate = new Date(this.state.date);
-        var billDateFormatted = billDate.getFullYear()+'-'+(billDate.getMonth()+1)+'-'+billDate.getDate();
+        var billDateFormatted =
+          billDate.getFullYear() +
+          "-" +
+          (billDate.getMonth() + 1) +
+          "-" +
+          billDate.getDate();
         var formData = {
           bill_number: this.state.billNumber,
           bill_amount: this.state.amount,
           bill_description: this.state.description,
           bill_date: billDateFormatted,
           bill_type: this.state.billType,
-          bill_status:this.state.billStatus,
-         // bill_image: [this.state.image],
-          supplier_id:this.state.supplier ,
+          bill_status: this.state.billStatus,
+          shop_id: userShopId,
+          supplier_id: this.state.supplier,
           userId: userId
         };
 
@@ -273,13 +303,13 @@ class AddBillScreen extends React.Component {
           formData.id = this.state.billInfo.id;
         }
 
-      // let multipartData = formData;
-      //   if(this.state.image != null){
-      //     multipartData = createFormData('bill_image',this.state.image,formData)
-      //     multipartData.append("body",formData)
-      //   }
-    console.log("formData : ", formData);
-    
+        // let multipartData = formData;
+        //   if(this.state.image != null){
+        //     multipartData = createFormData('bill_image',this.state.image,formData)
+        //     multipartData.append("body",formData)
+        //   }
+        console.log("formData : ", formData);
+
         let serverCallBill =
           this.state.formType == 0
             ? await BillService.addBill(formData)
@@ -292,12 +322,12 @@ class AddBillScreen extends React.Component {
           this.setState({
             date: new Date(),
             billNumber: "",
-            billType: 0,
+            billType: 1,
             billStatus: 0,
             supplier: 0,
             amount: "",
             description: "",
-            image: null,
+            image: null
           });
           var msg = serverCallBill.msg;
           Toast.show({
@@ -324,88 +354,154 @@ class AddBillScreen extends React.Component {
     }
   };
 
-  _renderAddBill = () => {
+
+  SettleBillCompletionHandler(paymentAmount){
+    this.setState({
+      paymentAmount:paymentAmount
+    },()=>{
+      this.submitPayment()
+    })
+  }
+
+  pressCancelHandler(){
+    this.setBillModalVisible(false)
+  }
+
+  submitPayment = async () => {
+    this.setState({ isLoading: true });
+    let userId = await userPreferences.getPreferences(userPreferences.userId);
+    let userShopId = await userPreferences.getPreferences(
+      userPreferences.userShopId
+    );
+    var paymentDate = new Date();
+    var paymentDateFormatted =
+      paymentDate.getFullYear() +
+      "-" +
+      (paymentDate.getMonth() + 1) +
+      "-" +
+      paymentDate.getDate();
+
+    var formData = {
+      category_id: 0,
+      transaction_amount: parseInt(this.state.paymentAmount),
+      transaction_description: " ",
+      transaction_date: paymentDateFormatted,
+      bill_id: this.state.billInfo.id,
+      transaction_mode_id: 1,
+      supplier_id: this.state.billInfo.supplier_id,
+      userId: userId,
+      shop_id: userShopId,
+      transaction_type: 3,
+      transaction_pending_amount: 0
+    };
+
+    console.log("formData : ", formData);
+
+    let serverCallPayment = await PaymentService.addPayment(formData);
+    this.setState({ isLoading: false });
+    if (serverCallPayment.status == 0) {
+      var msg = serverCallPayment.msg;
+      utility.showAlert(msg);
+    } else {
+      this.setBillModalVisible(false)
+      var msg = serverCallPayment.msg;
+      Toast.show({
+        text: msg,
+        buttonText: "Okay",
+        type: "success",
+        duration: 5000
+      });
+      this.props.navigation.goBack();
+    }
+  };
+
+  renderSettleBill = () => {
+    return (
+      <View>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={this.state.billModalVisible}
+          style={styles.modal}
+          onRequestClose={() => {}}
+        >
+          <View style={styles.modal}>
+            <SettleBill
+            completionHandler={this.SettleBillCompletionHandler}
+              pressCancelHandler={this.pressCancelHandler}
+            ></SettleBill>
+          </View>
+        </Modal>
+      </View>
+    );
+  };
+
+  renderAddBill = () => {
     return (
       <>
-        <Content padder contentContainerStyle={styles.container}>
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              justifyContent: "space-between"
-            }}
-          >
-            <KeyboardAvoidingView>
-              <Grid>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Date"} />
-                  <EADatePicker
-                    defaultDate={new Date()}
-                    minimumDate={new Date(2016, 1, 1)}
-                    maximumDate={new Date()}
-                    locale={"en"}
-                    timeZoneOffsetInMinutes={undefined}
-                    modalTransparent={false}
-                    animationType={"fade"}
-                    androidMode={"default"}
-                    onDateChange={this._onChangeText("date")}
-                    disabled={false}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Bill Amount"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.amount}
-                    keyboardType="number-pad"
-                    error={this.state.amountError}
-                    onBlur={this._onBlurText(
-                      "required",
-                      "amountError",
-                      "amount"
-                    )}
-                    onChangeText={this._onChangeText("amount")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Bill Number"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.billNumber}
-                    keyboardType="default"
-                    error={this.state.billError}
-                    onBlur={this._onBlurText(
-                      "required",
-                      "billError",
-                      "billNumber"
-                    )}
-                    onChangeText={this._onChangeText("billNumber")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Supplier"} />
-                  <EAPicker
-                    note
-                    mode="dropdown"
-                    selectedValue={this.state.supplier}
-                    option={this.state.arrSuppliers}
-                   // iosIcon={<Icon name="arrow-down" />}
-                    error={this.state.supplierError}
-                    onValueChange={this._onChangeText("supplier")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Bill Type"} />
-                  <EAPicker
-                    note
-                    mode="dropdown"
-                    selectedValue={this.state.billType}
-                    option={Enums.billType}
-                    error={this.state.billTypeError}
-                  //  iosIcon={<Icon name="arrow-down" />}
-                    onValueChange={this._onChangeText("billType")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
+        <Content
+          padder
+          contentContainerStyle={{
+            flexGrow: 1
+          }}
+        >
+          <KeyboardAvoidingView behavior="padding" enabled>
+            <Grid>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Date"} />
+                <EADatePicker
+                  defaultDate={new Date()}
+                  minimumDate={new Date(2016, 1, 1)}
+                  maximumDate={new Date()}
+                  locale={"en"}
+                  timeZoneOffsetInMinutes={undefined}
+                  modalTransparent={false}
+                  animationType={"fade"}
+                  androidMode={"default"}
+                  onDateChange={this.onChangeText("date")}
+                  disabled={false}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Bill Amount"} />
+                <EATextInput
+                  autoCapitalize="none"
+                  value={this.state.amount}
+                  keyboardType="number-pad"
+                  error={this.state.amountError}
+                  onBlur={this.onBlurText("required", "amountError", "amount")}
+                  onChangeText={this.onChangeText("amount")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Bill Number"} />
+                <EATextInput
+                  autoCapitalize="none"
+                  value={this.state.billNumber}
+                  keyboardType="default"
+                  error={this.state.billError}
+                  onBlur={this.onBlurText(
+                    "required",
+                    "billError",
+                    "billNumber"
+                  )}
+                  onChangeText={this.onChangeText("billNumber")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Supplier"} />
+                <EAPicker
+                  note
+                  mode="dropdown"
+                  selectedValue={this.state.supplier}
+                  option={this.state.arrSuppliers}
+                  // iosIcon={<Icon name="arrow-down" />}
+                  error={this.state.supplierError}
+                  onValueChange={this.onChangeText("supplier")}
+                />
+              </Row>
+              {/* {this.state.formType == 1 ? (
+                <Row style={FormStyle.InputSection}>
                   <EATextLabel labelText={"Bill Status"} />
                   <EAPicker
                     note
@@ -413,53 +509,61 @@ class AddBillScreen extends React.Component {
                     selectedValue={this.state.billStatus}
                     option={Enums.billStatus}
                     error={this.state.billStatusError}
-                 //   iosIcon={<Icon name="arrow-down" />}
-                    onValueChange={this._onChangeText("billStatus")}
+                    //   iosIcon={<Icon name="arrow-down" />}
+                    onValueChange={this.onChangeText("billStatus")}
                   />
                 </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Description"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.description}
-                    multiline={true}
-                    numberOfLines={3}
-                    maxLength={130}
-                    keyboardType="default"
-                    //     error={this.state.descriptionError}
-                    onChangeText={this._onChangeText("description")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <View
-                    style={{
-                      flex: 1,
-                      alignItems: "center",
-                      justifyContent: "center"
-                    }}
-                  >
-                    <Button onPress={this._pickImage}>
-                      <Text>Pick an image from camera roll</Text>
-                    </Button>
-                    {this.state.image != null ? (
-                      <Thumbnail
-                        square
-                        large
-                        source={{ uri: this.state.image.uri }}
-                        style={{marginTop:10}}
-                      />
-                    ) : null}
-                  </View>
-                </Row>
-              </Grid>
-            </KeyboardAvoidingView>
-          </ScrollView>
+              ) : (
+                <></>
+              )} */}
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Description"} />
+                <EATextInput
+                  autoCapitalize="sentences"
+                  value={this.state.description}
+                  keyboardType="default"
+                  //     error={this.state.descriptionError}
+                  onChangeText={this.onChangeText("description")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                {/* <EATextLabel labelText={"Description"} /> */}
+                <View
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                >
+                  <Button onPress={this.selectImage}>
+                    <Text>Pick an image from camera roll</Text>
+                  </Button>
+                  {this.state.image != null ? (
+                    <Thumbnail
+                      square
+                      large
+                      source={{ uri: this.state.image.uri }}
+                      style={{ marginTop: 10 }}
+                    />
+                  ) : null}
+                </View>
+              </Row>
+            </Grid>
+          </KeyboardAvoidingView>
         </Content>
         <Footer>
           <FooterTab>
-            <Button full onPress={this._submitBillForm}>
+            <Button full onPress={this.submitBillForm}>
               <Text>{this.state.formType == 0 ? "Add Bill" : "Update"}</Text>
             </Button>
+            {this.state.formType == 1 ?   (<Button full onPress={()=>{
+              this.setBillModalVisible(true)
+            }}>
+              <Text>Settle Bill</Text>
+            </Button>) :(<></>)
+
+            }
+          
           </FooterTab>
         </Footer>
       </>
@@ -468,44 +572,41 @@ class AddBillScreen extends React.Component {
 
   render() {
     return (
-      <StyleProvider style={getTheme(commonColors)}>
-        <Container>
-          <Header noShadow>
-            <Left>
-              <Button
-                transparent
-                onPress={() => this.props.navigation.goBack()}
-              >
-                <Icon name="arrow-back" />
-              </Button>
-            </Left>
-            <Body>
-              <Title style={styles.headerColor}>
-                {this.state.formType == 0 ? "Add Bill" : "Edit Bill"}
-              </Title>
-            </Body>
-            <Right />
-          </Header>
-          {this.state.isLoading ? <Loader /> : this._renderAddBill()}
-        </Container>
-      </StyleProvider>
+      <>
+        <StyleProvider style={getTheme(commonColors)}>
+          <Container>
+            <Header noShadow>
+              <Left>
+                <Button
+                  transparent
+                  onPress={() => this.props.navigation.goBack()}
+                >
+                  <Icon name="arrow-back" />
+                </Button>
+              </Left>
+              <Body>
+                <Title style={FormStyle.headerColor}>
+                  {this.state.formType == 0 ? "Add Bill" : "Edit Bill"}
+                </Title>
+              </Body>
+              <Right />
+            </Header>
+            {this.state.isLoading ? <Loader /> : this.renderAddBill()}
+          </Container>
+        </StyleProvider>
+        {this.state.billModalVisible ? this.renderSettleBill() : <></>}
+      </>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modal: {
     flex: 1,
-    backgroundColor: "#FFF"
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)"
   },
-  headerColor: ToolbarHeader,
-  InputSection: {
-    flexDirection: "column",
-    paddingLeft: 16,
-    paddingRight: 15,
-    paddingTop: 10,
-    paddingBottom: 15
-  }
-});
+})
 
 export default AddBillScreen;

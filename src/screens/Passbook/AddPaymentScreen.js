@@ -35,12 +35,7 @@ import {
   EAPicker
 } from "../../components";
 import Loader from "../Shared/Loader";
-import {
-  isValid,
-  userPreferences,
-  utility,
-  Enums
-} from "../../utility";
+import { isValid, userPreferences, utility, Enums } from "../../utility";
 import BillService from "../../services/bills";
 import SupplierService from "../../services/supplier";
 import PaymentService from "../../services/payments";
@@ -50,7 +45,7 @@ class AddPaymentScreen extends React.Component {
     super(props);
     this.state = {
       formType: 0,
-      payInfo:null,
+      payInfo: null,
       arrSuppliers: [],
       arrCategories: [],
       arrBills: [],
@@ -86,16 +81,19 @@ class AddPaymentScreen extends React.Component {
         supplier: 0,
         billId: 0,
         categoryId: 0,
-        arrBills:[]
+        arrBills: []
       });
     } else if (key == "supplier" && text != 0) {
-      this.setState({
-        [key + "Error"]: "",
-        [key]: text,
-        arrBills:[]
-      },()=>{
+      this.setState(
+        {
+          [key + "Error"]: "",
+          [key]: text,
+          arrBills: []
+        },
+        () => {
           this.getSupplierBills();
-      });
+        }
+      );
     } else if (key == "billId" && text != 0) {
       this.setState({
         [key + "Error"]: "",
@@ -131,9 +129,15 @@ class AddPaymentScreen extends React.Component {
 
   getSuppliers = async () => {
     try {
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
       let userId = await userPreferences.getPreferences(userPreferences.userId);
       this.setState({ isLoading: true });
-      let supplierData = await SupplierService.getSupplierList(userId);
+      let supplierData = await SupplierService.getSupplierList(
+        userId,
+        userShopId
+      );
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
@@ -240,23 +244,21 @@ class AddPaymentScreen extends React.Component {
     }
   };
 
-
-
   validate = async () => {
-
     let status = { valid: true, message: "" };
     let dateError = isValid("required", this.state.date);
     let paymentAmountError = isValid("required", this.state.paymentAmount);
-    let typeIdError = this.state.typeId == 0 ? "Please select Type Id":"";
-    let modeError = this.state.mode == 0 ? "Please select Mode":"";
-    let categoryIdError = ""
-    let supplierError = ""
-    let billIdError = ""
-    if(this.state.typeId == 1 || this.state.typeId == 2){
-     categoryIdError = this.state.categoryId == 0 ? "Please select Catgory Id":"";
-    }else if(this.state.typeId == 3){
-       supplierError = this.state.supplier == 0 ? "Please select supplier":"" ;
-       billIdError = this.state.billId == 0 ? "Please select bill Id":"";
+    let typeIdError = this.state.typeId == 0 ? "Please select Type Id" : "";
+    let modeError = this.state.mode == 0 ? "Please select Mode" : "";
+    let categoryIdError = "";
+    let supplierError = "";
+    let billIdError = "";
+    if (this.state.typeId == 1 || this.state.typeId == 2) {
+      categoryIdError =
+        this.state.categoryId == 0 ? "Please select Catgory Id" : "";
+    } else if (this.state.typeId == 3) {
+      supplierError = this.state.supplier == 0 ? "Please select supplier" : "";
+      billIdError = this.state.billId == 0 ? "Please select bill Id" : "";
     }
 
     let promise = new Promise((resolve, reject) => {
@@ -317,9 +319,16 @@ class AddPaymentScreen extends React.Component {
         let userId = await userPreferences.getPreferences(
           userPreferences.userId
         );
-     
+        let userShopId = await userPreferences.getPreferences(
+          userPreferences.userShopId
+        );
         var paymentDate = new Date(this.state.date);
-        var paymentDateFormatted = paymentDate.getFullYear()+'-'+(paymentDate.getMonth()+1)+'-'+paymentDate.getDate();
+        var paymentDateFormatted =
+          paymentDate.getFullYear() +
+          "-" +
+          (paymentDate.getMonth() + 1) +
+          "-" +
+          paymentDate.getDate();
 
         var formData = {
           category_id: this.state.categoryId,
@@ -327,18 +336,19 @@ class AddPaymentScreen extends React.Component {
           transaction_description: this.state.description,
           transaction_date: paymentDateFormatted,
           bill_id: this.state.billId,
-          transaction_mode_id:this.state.mode,
-          supplier_id:this.state.supplier,
+          transaction_mode_id: this.state.mode,
+          supplier_id: this.state.supplier,
           userId: userId,
-          transaction_type:this.state.typeId,
-          transaction_pending_amount:0
+          shop_id: userShopId,
+          transaction_type: this.state.typeId,
+          transaction_pending_amount: 0
         };
 
         if (this.state.formType == 1) {
           formData.id = this.state.payInfo.id;
         }
         console.log("formData : ", formData);
-    
+
         let serverCallPayment =
           this.state.formType == 0
             ? await PaymentService.addPayment(formData)
@@ -353,11 +363,11 @@ class AddPaymentScreen extends React.Component {
             transaction_amount: "",
             transaction_description: "",
             transaction_date: new Date(),
-            billId:0,
-            mode:0,
-            supplier_id:0,
-            transaction_type:0,
-            transaction_pending_amount:0
+            billId: 0,
+            mode: 0,
+            supplier_id: 0,
+            transaction_type: 0,
+            transaction_pending_amount: 0
           });
           var msg = serverCallPayment.msg;
           Toast.show({
@@ -442,93 +452,92 @@ class AddPaymentScreen extends React.Component {
   renderAddPayment = () => {
     return (
       <>
-        <Content padder contentContainerStyle={FormStyle.container}>
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              justifyContent: "space-between"
-            }}
-          >
-            <KeyboardAvoidingView>
-              <Grid>
-                <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Date"} />
-                  <EADatePicker
-                    defaultDate={new Date()}
-                    minimumDate={new Date(2016, 1, 1)}
-                    maximumDate={new Date()}
-                    locale={"en"}
-                    timeZoneOffsetInMinutes={undefined}
-                    modalTransparent={false}
-                    animationType={"fade"}
-                    androidMode={"default"}
-                    onDateChange={this.onChangeText("date")}
-                    disabled={false}
-                  />
-                </Row>
+        <Content
+          padder
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "space-between"
+          }}
+        >
+          <KeyboardAvoidingView>
+            <Grid>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Date"} />
+                <EADatePicker
+                  defaultDate={new Date()}
+                  minimumDate={new Date(2016, 1, 1)}
+                  maximumDate={new Date()}
+                  locale={"en"}
+                  timeZoneOffsetInMinutes={undefined}
+                  modalTransparent={false}
+                  animationType={"fade"}
+                  androidMode={"default"}
+                  onDateChange={this.onChangeText("date")}
+                  disabled={false}
+                />
+              </Row>
 
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Payment Type"} />
-                  <EAPicker
-                    note
-                    mode="dropdown"
-                    selectedValue={this.state.typeId}
-                    option={Enums.paymentType}
-                    error={this.state.typeIdError}
-                    //  iosIcon={<Icon name="arrow-down" />}
-                    onValueChange={this.onChangeText("typeId")}
-                  />
-                </Row>
+              <Row style={styles.InputSection}>
+                <EATextLabel labelText={"Payment Type"} />
+                <EAPicker
+                  note
+                  mode="dropdown"
+                  selectedValue={this.state.typeId}
+                  option={Enums.paymentType}
+                  error={this.state.typeIdError}
+                  //  iosIcon={<Icon name="arrow-down" />}
+                  onValueChange={this.onChangeText("typeId")}
+                />
+              </Row>
 
-                {this.state.typeId == 3
-                  ? this.renderSupplierPayment()
-                  : this.renderCategory()}
+              {this.state.typeId == 3
+                ? this.renderSupplierPayment()
+                : this.renderCategory()}
 
-                <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Payment Amount"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.paymentAmount}
-                    keyboardType="number-pad"
-                    error={this.state.paymentAmountError}
-                    onBlur={this.onBlurText(
-                      "required",
-                      "paymentAmountError",
-                      "paymentAmount"
-                    )}
-                    onChangeText={this.onChangeText("paymentAmount")}
-                  />
-                </Row>
-                <Row style={styles.InputSection}>
-                  <EATextLabel labelText={"Mode"} />
-                  <EAPicker
-                    note
-                    mode="dropdown"
-                    selectedValue={this.state.mode}
-                    option={Enums.paymentMode}
-                    error={this.state.modeError}
-                    //  iosIcon={<Icon name="arrow-down" />}
-                    onValueChange={this.onChangeText("mode")}
-                  />
-                </Row>
-                <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Description"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.description}
-                    keyboardType="default"
-                    error={this.state.descriptionError}
-                    onBlur={this.onBlurText(
-                      "required",
-                      "descriptionError",
-                      "description"
-                    )}
-                    onChangeText={this.onChangeText("description")}
-                  />
-                </Row>
-              </Grid>
-            </KeyboardAvoidingView>
-          </ScrollView>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Payment Amount"} />
+                <EATextInput
+                  autoCapitalize="none"
+                  value={this.state.paymentAmount}
+                  keyboardType="number-pad"
+                  error={this.state.paymentAmountError}
+                  onBlur={this.onBlurText(
+                    "required",
+                    "paymentAmountError",
+                    "paymentAmount"
+                  )}
+                  onChangeText={this.onChangeText("paymentAmount")}
+                />
+              </Row>
+              <Row style={styles.InputSection}>
+                <EATextLabel labelText={"Mode"} />
+                <EAPicker
+                  note
+                  mode="dropdown"
+                  selectedValue={this.state.mode}
+                  option={Enums.paymentMode}
+                  error={this.state.modeError}
+                  //  iosIcon={<Icon name="arrow-down" />}
+                  onValueChange={this.onChangeText("mode")}
+                />
+              </Row>
+              <Row style={FormStyle.InputSection}>
+                <EATextLabel labelText={"Description"} />
+                <EATextInput
+                  autoCapitalize="none"
+                  value={this.state.description}
+                  keyboardType="default"
+                  error={this.state.descriptionError}
+                  onBlur={this.onBlurText(
+                    "required",
+                    "descriptionError",
+                    "description"
+                  )}
+                  onChangeText={this.onChangeText("description")}
+                />
+              </Row>
+            </Grid>
+          </KeyboardAvoidingView>
         </Content>
         <Footer>
           <FooterTab>

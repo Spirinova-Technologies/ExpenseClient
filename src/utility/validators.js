@@ -27,12 +27,12 @@ const validators = {
     phone: {
         presence: {
             allowEmpty: false,
-            message: '^Phone is required'
+            message: '^Contact no is required'
         },
         length: {
             minimum: 10,
             maximum: 12,
-            tooLong: '^Phone is to long',
+            tooLong: '^Contact no is to long',
             tooShort: "needs to have %{count} words or more",
         }
     },
@@ -87,6 +87,17 @@ const validators = {
             pattern: "[a-z ]+",
             // flags: "i",
             message: "^Only small letters are allowed.",
+        }
+    },
+    gstinNumber: {
+        presence: {
+            allowEmpty: false,
+            message: '^This field is required'
+        },
+        format: {
+            pattern: /^([0][1-9]|[1-2][0-9]|[3][0-7])([A-Z]{5})([0-9]{4})([A-Z]{1}[1-9A-Z]{1})([Z]{1})([0-9A-Z]{1})+$/,
+            // flags: "i",
+            message: "^Enter GSTIN in correct format.",
         }
     }
 };

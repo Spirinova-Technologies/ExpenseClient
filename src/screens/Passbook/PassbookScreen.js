@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StyleSheet, FlatList } from "react-native";
+import { ScrollView, StyleSheet, Modal, FlatList } from "react-native";
 import {
   Container,
   Content,
@@ -9,22 +9,18 @@ import {
   Picker,
   View,
   H1,
+  Toast,
   StyleProvider
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
 import { EAButtonGroup, EABricks, EAListItem } from "../../components";
 import { FabButtonPrimary } from "../../styles";
+
+import { isValid, userPreferences, utility, Enums } from "../../utility";
 import Loader from "../Shared/Loader";
-import {
-  isValid,
-  userPreferences,
-  utility,
-  Enums
-} from "../../utility";
+import FilterScreen from "../Shared/FilterScreen";
 import PaymentService from "../../services/payments";
-
-
 
 class PassbookScreen extends React.Component {
   constructor(props) {
@@ -44,33 +40,14 @@ class PassbookScreen extends React.Component {
     };
     this.btnFilterTap = this.btnFilterTap.bind(this);
     this.filterCompletionHandler = this.filterCompletionHandler.bind(this);
-    props.navigation.setParams({
-      onTabFocus: this.handleTabFocus
-    });
   }
 
-  // static navigationOptions = {
-  //   headerShown: false
-  // };
-
-  static navigationOptions = () => {
-    return {
-      // this handler will override the generic one defined at Navigator level
-      tabBarOnPress: ({ navigation, defaultHandler }) => {
-        if (navigation.isFocused()) {
-          
-          return;
-        }
-
-        navigation.state.params.onTabFocus();
-        defaultHandler();
-      },
-    };
+  static navigationOptions = {
+    headerShown: false
   };
 
   handleTabFocus = () => {
-    console.log("handleTabFocus")
-    // perform your logic here
+    this.getPayments();
   };
 
   setFilterModalVisible(visible) {
@@ -98,7 +75,7 @@ class PassbookScreen extends React.Component {
         arrPayments: [],
         expense: 0,
         cash: 0,
-        balance: 0,
+        balance: 0
       });
     } else {
       this.setState({ fromDate: "", toDate: "", filterType: tabId }, () => {
@@ -106,8 +83,6 @@ class PassbookScreen extends React.Component {
       });
     }
   }
-
-
 
   filterCompletionHandler(type, fromDate, toDate) {
     if (type == 1) {
@@ -119,7 +94,7 @@ class PassbookScreen extends React.Component {
           arrPayments: [],
           expense: 0,
           cash: 0,
-          balance: 0,
+          balance: 0
         },
         () => {
           this.getPayments();
@@ -130,13 +105,11 @@ class PassbookScreen extends React.Component {
   }
 
   async componentDidMount() {
-    this.getPayments();
-    
+    this.props.navigation.addListener('didFocus', this.handleTabFocus)
+   // this.getPayments();
   }
 
-  async componentDidUpdate(){
-   
-  }
+  async componentDidUpdate() {}
 
   getPayments = async () => {
     try {
@@ -147,13 +120,16 @@ class PassbookScreen extends React.Component {
         balance: 0
       });
       let userId = await userPreferences.getPreferences(userPreferences.userId);
-
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
       var formData = {
         filterType: this.state.filterType,
         fromDate: this.state.fromDate,
         toDate: this.state.toDate,
         transaction_type: this.state.transactionType,
-        userId: userId
+        userId: userId,
+        shopId:userShopId
       };
       this.setState({ isLoading: true });
       let serverCallPayments = await PaymentService.getPaymentList(formData);
@@ -284,10 +260,7 @@ class PassbookScreen extends React.Component {
                 <FlatList
                   data={this.state.arrPayments}
                   renderItem={({ item }) => (
-                    <EAListItem
-                      paymentInfo={item}
-                      type={3}
-                    />
+                    <EAListItem paymentInfo={item} type={3} />
                   )}
                   keyExtractor={item => item.id + ""}
                 />
@@ -301,20 +274,22 @@ class PassbookScreen extends React.Component {
 
   render() {
     return (
-      <StyleProvider style={getTheme(commonColors)}>
-        <Container>
-          
-          <Content padder contentContainerStyle={styles.container}>
-            <Grid>
-              <Row style={styles.buttonGroupSection}>
-                <EAButtonGroup pressHandler={this.btnFilterTap} />
-              </Row>
-             {this.renderTransactionTypePicker()}
-             {this.state.isLoading ? <Loader /> : this.renderPayment()}
-            </Grid>
-          </Content>
-        </Container>
-      </StyleProvider>
+      <>
+        <StyleProvider style={getTheme(commonColors)}>
+          <Container>
+            <Content padder contentContainerStyle={styles.container}>
+              <Grid>
+                <Row style={styles.buttonGroupSection}>
+                  <EAButtonGroup pressHandler={this.btnFilterTap} />
+                </Row>
+                {this.renderTransactionTypePicker()}
+                {this.state.isLoading ? <Loader /> : this.renderPayment()}
+              </Grid>
+            </Content>
+          </Container>
+        </StyleProvider>
+        {this.state.filterModalVisible ? this.renderFilterPayment() : <></>}
+      </>
     );
   }
 }
@@ -339,6 +314,12 @@ const styles = StyleSheet.create({
   },
   bricksContainer: {
     height: 90
+  },
+  modal: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)"
   },
   pickerIcon: {
     color: "#FE3852",

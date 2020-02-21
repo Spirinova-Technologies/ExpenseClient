@@ -18,5 +18,6 @@ export default WebUrlUtility = {
     updatePayment:"api/transaction/update",
     paymentList:"api/transaction/list",
     categoryList:"api/category/list",
+    homeDetail:"api/transaction/home"
     
 }

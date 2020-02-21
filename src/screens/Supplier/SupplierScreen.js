@@ -3,6 +3,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   ScrollView,
+  Linking,
   FlatList
 } from "react-native";
 import {
@@ -30,61 +31,79 @@ import { userPreferences, utility } from "../../utility";
 import SupplierService from "../../services/supplier";
 
 class SupplierScreen extends React.Component {
+  static navigationOptions = {
+    headerShown: false
+  };
+  
   constructor(props) {
     super(props);
     this.state = {
       searchSupplier: "",
-      arrSuppliers : [],
-      arrFilteredSuppliers : [],
+      arrSuppliers: [],
+      arrFilteredSuppliers: [],
       isLoading: false
     };
     this.arrayholder = [];
     this.editSupplier = this.editSupplier.bind(this);
   }
 
-  _RedirectAddSupplier = async () => {
-    //Form type => 0:Add , 1:Edit
-    this.props.navigation.navigate("AddSupplier",{formType:0});
+  handleTabFocus = () => {
+    this.getSupplier();
   };
 
-  editSupplier(data) {
-    this.props.navigation.navigate("AddSupplier",{formType:1,supplier:data});
+  addSupplier = async () => {
+    //Form type => 0:Add , 1:Edit
+    this.props.navigation.navigate("AddSupplier", { formType: 0 });
+  };
+
+  editSupplier(supplierInfo) {
+    this.props.navigation.navigate("AddSupplier", {
+      formType: 1,
+      supplier: supplierInfo
+    });
   }
 
-  _onChangeText = key => text => {
+  linkHandler(supplierInfo,index) {
+    if(index == 1){
+      utility.phoneCall(supplierInfo.supplier_phone)
+    }else if(index == 2){
+      utility.openWhatsApp(supplierInfo.supplier_phone)
+    }
+  }
+
+  onChangeText = key => text => {
     this.setState({
       [key]: text
     });
-    this.SearchFilterFunction(text)
+    this.SearchFilterFunction(text);
   };
 
   async componentDidMount() {
-    this.getSupplier();
-    
+    this.props.navigation.addListener('didFocus', this.handleTabFocus)
   }
 
-
-  async componentDidUpdate(){
-   
-  }
+  async componentDidUpdate() {}
 
   SearchFilterFunction(text) {
-    const newData = this.arrayholder.filter(item => {      
+    const newData = this.arrayholder.filter(item => {
       const itemData = `${item.supplier_name.toUpperCase()}`;
-      
-       const textData = text.toUpperCase();
-        
-       return itemData.indexOf(textData) > -1;    
+
+      const textData = text.toUpperCase();
+
+      return itemData.indexOf(textData) > -1;
     });
-    
-    this.setState({ arrFilteredSuppliers: newData });  
+
+    this.setState({ arrFilteredSuppliers: newData });
   }
 
   getSupplier = async () => {
     try {
       let userId = await userPreferences.getPreferences(userPreferences.userId);
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
       this.setState({ isLoading: true });
-      let supplierData = await SupplierService.getSupplierList(userId);
+      let supplierData = await SupplierService.getSupplierList(userId,userShopId);
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
@@ -94,7 +113,7 @@ class SupplierScreen extends React.Component {
           arrSuppliers: supplierData.supplier,
           arrFilteredSuppliers: supplierData.supplier
         });
-        this.arrayholder = supplierData.supplier
+        this.arrayholder = supplierData.supplier;
       }
     } catch (error) {
       this.setState({ isLoading: false }, () => {
@@ -108,7 +127,7 @@ class SupplierScreen extends React.Component {
     }
   };
 
-  _renderSuppliers= () => {
+  renderSuppliers = () => {
     if (this.state.arrFilteredSuppliers.length == 0) {
       return (
         <View style={styles.message}>
@@ -117,25 +136,27 @@ class SupplierScreen extends React.Component {
       );
     } else {
       return (
-       
-          <Row >
-            <ScrollView
-              contentContainerStyle={{
-                flexGrow: 1,
-                justifyContent: "space-between"
-              }}
-            >
-             
-                <FlatList
-                  data={this.state.arrFilteredSuppliers}
-                  renderItem={({ item }) => (
-                    <EAListItem supplier={item} type={1} pressHandler={this.editSupplier}/>
-                  )}
-                  keyExtractor={item => item.id+""}
+        <Row>
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: "space-between"
+            }}
+          >
+            <FlatList
+              data={this.state.arrFilteredSuppliers}
+              renderItem={({ item }) => (
+                <EAListItem
+                  supplier={item}
+                  type={1}
+                  pressHandler={this.editSupplier}
+                  linkHandler={this.linkHandler}
                 />
-             
-            </ScrollView>
-          </Row>
+              )}
+              keyExtractor={item => item.id + ""}
+            />
+          </ScrollView>
+        </Row>
       );
     }
   };
@@ -145,36 +166,32 @@ class SupplierScreen extends React.Component {
       <StyleProvider style={getTheme(commonColors)}>
         <Container>
           <Content padder contentContainerStyle={styles.container}>
-          <Grid>
-          <Row style={styles.rowSection}>
-            <KeyboardAvoidingView style={{ flex: 1 }}>
-              <EATextInput
-                autoCapitalize="none"
-                value={this.state.searchSupplier}
-                keyboardType="default"
-                placeholder="Search"
-                onChangeText={this._onChangeText("searchSupplier")}
-              />
-            </KeyboardAvoidingView>
-          </Row>
-          <>
-          {this.state.isLoading ? <Loader /> : this._renderSuppliers()}
-          </>
-          </Grid>
-        
-            
+            <Grid>
+              <Row style={styles.rowSection}>
+                <KeyboardAvoidingView style={{ flex: 1 }}>
+                  <EATextInput
+                    autoCapitalize="none"
+                    value={this.state.searchSupplier}
+                    keyboardType="default"
+                    placeholder="Search"
+                    onChangeText={this.onChangeText("searchSupplier")}
+                  />
+                </KeyboardAvoidingView>
+              </Row>
+              <>{this.state.isLoading ? <Loader /> : this.renderSuppliers()}</>
+            </Grid>
           </Content>
           <View>
-              <Fab
-                direction="up"
-                containerStyle={{}}
-                style={styles.fabButton}
-                position="bottomRight"
-                onPress={this._RedirectAddSupplier}
-              >
-                <Icon name="add" />
-              </Fab>
-            </View>
+            <Fab
+              direction="up"
+              containerStyle={{}}
+              style={styles.fabButton}
+              position="bottomRight"
+              onPress={this.addSupplier}
+            >
+              <Icon name="add" />
+            </Fab>
+          </View>
         </Container>
       </StyleProvider>
     );
