@@ -27,10 +27,14 @@ import {
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
 import { FormStyle } from "../../styles";
-import { EATextInput, EATextLabel } from "../../components";
+import { EATextInput, EATextLabel,EATextInputRightButton } from "../../components";
 import { isValid, userPreferences, utility } from "../../utility";
+import Constants from "expo-constants";
+import * as Permissions from "expo-permissions";
+// import * as Contacts from 'expo-contacts';
 import Loader from "../Shared/Loader";
 import SupplierService from "../../services/supplier";
+import Contacts from "react-native-contacts";
 
 class AddSupplierScreen extends React.Component {
   constructor(props) {
@@ -48,8 +52,10 @@ class AddSupplierScreen extends React.Component {
       phoneError: "",
       cityError: "",
       addressError: "",
+      hasContactPermission:false,
       isLoading: false
     };
+    this.browseContactTapped = this.browseContactTapped.bind(this)
   }
 
   static navigationOptions = {
@@ -69,6 +75,7 @@ class AddSupplierScreen extends React.Component {
   };
 
   componentDidMount() {
+   // this.getContactsPermissionAsync();
     const { navigation } = this.props;
     const formType = navigation.getParam("formType");
 
@@ -92,6 +99,39 @@ class AddSupplierScreen extends React.Component {
     }
   }
 
+  getContactsPermissionAsync  = async () =>  {
+   
+    const { status, permissions } = await Permissions.askAsync(Permissions.CONTACTS);
+    if (status === 'granted') {
+      this.setState({ hasContactPermission: (status === "granted" ? true:false) });
+    } else {
+      throw new Error('Contacts permission not granted');
+    }
+  }
+
+  browseContactTapped = async () =>
+  {
+
+    Contacts.getAll((err, contacts) => {
+      if (err === "denied") {
+        console.warn("Permission to access contacts was denied");
+      } else {
+        console.warn("contacts : ",contacts);
+      }
+    });
+    
+        // const { data } = await Contacts.getContactsAsync({
+        //   fields: [Contacts.Fields.Emails],
+        // });
+        // console.log("data : ",data);
+        // if (data.length > 0) {
+        //   const contact = data[0];
+          
+        //   console.log("contact : ",contact);
+        // }
+    
+      console.log('Right button tapped')
+  }
   validate = async () => {
     let status = { valid: true, message: "" };
     let nameError = isValid("name", this.state.name);
@@ -222,7 +262,7 @@ class AddSupplierScreen extends React.Component {
             <Grid>
               <Row style={FormStyle.InputSection}>
                 <EATextLabel labelText={"Contact Number"} />
-                <EATextInput
+                <EATextInputRightButton
                   autoCapitalize="none"
                   value={this.state.phone}
                   keyboardType="phone-pad"
@@ -230,6 +270,9 @@ class AddSupplierScreen extends React.Component {
                   onBlur={this.onBlurText("phone", "phoneError", "phone")}
                   error={this.state.phoneError}
                   onChangeText={this.onChangeText("phone")}
+                  btnPressHandler={this.browseContactTapped}
+                  btnImage={'contacts'}
+                  btnImageType={'MaterialIcons'}
                 />
               </Row>
               <Row style={FormStyle.InputSection}>

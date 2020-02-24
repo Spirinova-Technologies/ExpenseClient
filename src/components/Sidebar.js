@@ -112,14 +112,14 @@ class EASideBar extends Component {
             </Left>
             <Body>
               <Title
-                style={(styles.headerColor, { textTransform: "capitalize" })}
+                style={styles.headerColor}
               >
                 {this.state.userName}
               </Title>
-              <Subtitle style={styles.subHeaderColor, { textTransform: "capitalize" }}>
+              <Subtitle style={styles.subHeaderColor}>
                 {this.state.businessName}
               </Subtitle>
-              <Subtitle style={styles.subHeaderColor, { textTransform: "capitalize" }}>
+              <Subtitle style={styles.subHeaderColor}>
                 {this.state.shopName ? '('+this.state.shopName+')':'' } 
               </Subtitle>
             </Body>

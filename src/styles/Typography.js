@@ -1,4 +1,5 @@
 export const ToolbarHeader = {
+    textTransform: "capitalize",
     color: '#212B36',
     fontWeight: "800",
     fontFamily: 'Roboto',
@@ -6,6 +7,7 @@ export const ToolbarHeader = {
 }
 
 export const ToolBarSubheader = {
+    textTransform: "capitalize",
     color: '#212B36',
     fontFamily: 'Roboto',
     fontWeight: "400",

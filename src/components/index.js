@@ -1,4 +1,4 @@
-import { EATextInput, EATextLabel, EADatePicker } from './TextInput';
+import { EATextInput, EATextLabel, EADatePicker,EATextInputRightButton } from './TextInput';
 import EASideBar from './Sidebar';
 import EAListItem from './ListItem';
 import EASingleListItem from './SingleListItem';
@@ -23,5 +23,6 @@ export {
     EASingleListItem,
     RadioButton,
     PopoverMenu,
-    EAPicker
+    EAPicker,
+    EATextInputRightButton
 };

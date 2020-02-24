@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     margin: 0,
     height: 32,
     width: 32,
-    backgroundColor:'white'
+    backgroundColor:'transparent'
   },
   iconImage:{
     alignSelf:'center'
