@@ -75,7 +75,7 @@ class UserProfile extends Component {
     if (!result.cancelled) {
       console.log(" image object : ",result);
       this.setState({ profileImage: result.uri, profileImageObject: result },()=>{
-       // this.updateProfile()
+        this.updateProfile()
       });
       
     }
@@ -93,25 +93,27 @@ class UserProfile extends Component {
       var formData = {
         first_name: this.state.profileInfo.first_name,
         last_name: this.state.profileInfo.last_name,
-        password:"Apple4004",
         phone_number: this.state.profileInfo.phone_number,
         address: this.state.profileInfo.address == undefined ? "":this.state.profileInfo.address,
-        business_name: this.state.profileInfo.business_name,
+        business_name:this.state.profileInfo.business_name,
         id: userId
       };
 
       let multipartData = formData;
         if(this.state.profileImageObject != null){
-          multipartData = await createFormData('profile_photo',this.state.profileImageObject,formData)
-          multipartData.append("body",formData)
+          multipartData = await createFormData('profile_photo',this.state.profileImageObject,formData,false)
         }
-      console.log("formData : ", multipartData);
 
       let serverCallUser = await UserService.updateProfile(multipartData,formData.id);
       this.setState({ isLoading: false });
       if (serverCallUser.status == 0) {
         var msg = serverCallUser.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "success",
+          duration: 5000
+        });
       } else {
      //  this.getProfile()
         var msg = serverCallUser.msg;
@@ -137,49 +139,6 @@ class UserProfile extends Component {
     }
   };
 
-
-  updateProfileFetch = async () =>{
-
-    let userId = await userPreferences.getPreferences(userPreferences.userId);
-
-      var formData = {
-        first_name:this.state.profileInfo.first_name,
-        last_name:this.state.profileInfo.last_name,
-        password:"Apple4004",
-        phone_number:this.state.profileInfo.phone_number,
-        address:this.state.profileInfo.address,
-        // profile_photo: this.state.profileInfo.profile_photo,
-        business_name:this.state.profileInfo.business_name,
-        id: userId
-      };
-      let token = await AsyncStorage.getItem("authToken");
-
-      
-      multipartFormData = await createFormData('profile_photo',this.state.profileImageObject, formData)
-      console.log("multipartFormData : ",multipartFormData)
-
-    fetch("http://3.12.226.80:3000/api/users/update/"+userId, {
-      headers: {
-        'Authorization': token,
-        'Content-Type': 'multipart/formdata',
-      },
-      method: "POST",
-      body: multipartFormData
-    })
-      .then(response => {
-        console.log("responsse", response); response.json()
-      })
-      .then(response => {
-        console.log("upload succes", response);
-        alert("Upload success!");
-      
-      })
-      .catch(error => {
-        console.log("upload error", error);
-        alert("Upload failed!");
-      });
-  };
-
   getProfile = async () => {
     try {
       let userId = await userPreferences.getPreferences(userPreferences.userId);
@@ -189,13 +148,18 @@ class UserProfile extends Component {
       console.log("respone :", userData);
       if (userData.status == 0) {
         var msg = userData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "success",
+          duration: 5000
+        });
       } else {
         if (userData.userInfo != null) {
           this.setState({
             profileInfo: userData.userInfo,
             profileImage:
-              userData.userInfo != null ? userData.basePathImage+userData.userInfo.profile_photo : null
+            userData.userInfo.profile_photo != null ? userData.userInfo.profile_photo : null
           });
         }
       }

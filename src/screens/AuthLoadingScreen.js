@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import * as Font from 'expo-font';
 import { Ionicons, Feather } from '@expo/vector-icons';
-
+import { isValid, utility, userPreferences } from "../utility";
 class AuthLoadingScreen extends React.Component {
   componentDidMount() {
     this._bootstrapAsync();
@@ -24,9 +24,25 @@ class AuthLoadingScreen extends React.Component {
       ...Feather.font
     });
 
+
+    let userId = await userPreferences.getPreferences(userPreferences.userId);
+    console.log("userId : ", userId);
+    if (userId != null) {
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
+      console.log("userShopId : ", userShopId);
+      if (userShopId != null) {
+        this.props.navigation.navigate("App");
+      } else {
+        this.props.navigation.navigate("Shops");
+      }
+    }else{
+      this.props.navigation.navigate("Auth");
+    }
     // This will switch to the App screen or Auth screen and this loading
     // screen will be unmounted and thrown away.
-    this.props.navigation.navigate(userToken ? 'App' : 'Auth');
+    // this.props.navigation.navigate(userToken ? 'App' : 'Auth');
   };
 
   // Render any loading content that you like here

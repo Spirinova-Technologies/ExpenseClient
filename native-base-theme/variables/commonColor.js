@@ -49,7 +49,7 @@ export default {
   androidRipple: true,
   androidRippleColor: 'rgba(245, 193, 200, 0.3)',
   androidRippleColorDark: 'rgba(0, 0, 0, 0.15)',
-  buttonUppercaseAndroidText: true,
+  buttonUppercaseAndroidText: false,
 
   // Badge
   badgeBg: '#ED1727',
@@ -177,7 +177,7 @@ export default {
 
   // Header
   toolbarBtnColor: platform === PLATFORM.IOS ? '#FE3852' : '#FE3852',
-  toolbarDefaultBg: platform === PLATFORM.IOS ? '#F9F9F9' : '#F9F9F9',
+  toolbarDefaultBg: platform === PLATFORM.IOS ? '#F8F9FA' : '#F8F9FA',
   toolbarHeight: platform === PLATFORM.IOS ? 64 : 56,
   toolbarSearchIconSize: platform === PLATFORM.IOS ? 20 : 23,
   toolbarInputColor: platform === PLATFORM.IOS ? '#CECDD2' : '#FE3852',

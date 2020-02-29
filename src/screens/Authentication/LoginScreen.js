@@ -6,6 +6,7 @@ import {
   StatusBar,
   Image,
   KeyboardAvoidingView,
+  Platform,
   AlertIOS
 } from "react-native";
 import {
@@ -14,16 +15,22 @@ import {
   Text,
   StyleProvider,
   Button,
+  Grid,
+  Row,
   Toast
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
 import SafeAreaView from "react-native-safe-area-view";
 import { WelcomeHeader, WelcomeHeaderDark } from "./AuthStyles";
-import { EATextInput, EASpinner } from "../../components";
+import {
+  EATextInput,
+  EASpinner,
+  EATextInputRightButton
+} from "../../components";
 import UserService from "../../services/user";
 import { isValid, utility, userPreferences } from "../../utility";
-
+import { FormStyle } from "../../styles";
 class LoginScreen extends React.Component {
   constructor(props) {
     super(props);
@@ -32,8 +39,12 @@ class LoginScreen extends React.Component {
       password: "",
       emailError: "",
       passwordError: "",
+      showPassword: false,
       isLoading: false
     };
+    this.email = React.createRef();
+    this.password = React.createRef();
+    this.showPasswordTap = this.showPasswordTap.bind(this);
   }
 
   static navigationOptions = {
@@ -41,20 +52,22 @@ class LoginScreen extends React.Component {
   };
 
   componentDidMount() {
-    this.checkAuth();
+    //this.checkAuth();
   }
 
   checkAuth = async () => {
     let userId = await userPreferences.getPreferences(userPreferences.userId);
     console.log("userId : ", userId);
     if (userId != null) {
-        let userShopId = await userPreferences.getPreferences(userPreferences.userShopId);
-    console.log("userShopId : ", userShopId);
-        if (userShopId != null) {
-          this.props.navigation.navigate("App");
-        }else{
-          this.props.navigation.navigate("Shops");
-        }
+      let userShopId = await userPreferences.getPreferences(
+        userPreferences.userShopId
+      );
+      console.log("userShopId : ", userShopId);
+      if (userShopId != null) {
+        this.props.navigation.navigate("App");
+      } else {
+        this.props.navigation.navigate("Shops");
+      }
     }
   };
 
@@ -73,7 +86,7 @@ class LoginScreen extends React.Component {
   validate = async () => {
     let status = { valid: true, message: "" };
     let emailError = isValid("email", this.state.email);
-    let passwordError = isValid("password", this.state.password);
+    let passwordError = isValid("required", this.state.password);
     let promise = new Promise((resolve, reject) => {
       this.setState(
         {
@@ -117,9 +130,14 @@ class LoginScreen extends React.Component {
         this.setState({ isLoading: false });
         if (auth.status == 0) {
           var msg = auth.msg;
-          utility.showAlert(msg);
+          Toast.show({
+            text: msg,
+            buttonText: "Okay",
+            type: "danger",
+            duration: 5000
+          });
         } else {
-         // console.log("auth : ", auth.users.id);
+          // console.log("auth : ", auth.users.id);
           var msg = auth.msg;
           userPreferences.setPreferences(
             userPreferences.authToken,
@@ -157,7 +175,26 @@ class LoginScreen extends React.Component {
             userPreferences.profilePhoto,
             auth.users.profile_photo
           );
-          this.props.navigation.navigate("Shops");
+
+          if (auth.shop_flag == 1) {
+            if (auth.shop != null && auth.shop.length == 1) {
+              let shopInfo = auth.shop[0];
+              await userPreferences.setPreferences(
+                userPreferences.userShopId,
+                shopInfo.id + ""
+              );
+              await userPreferences.setPreferences(
+                userPreferences.userShopName,
+                shopInfo.shop_name + ""
+              );
+              this.props.navigation.navigate("App");
+            } else {
+              this.props.navigation.navigate("Shops");
+            }
+          } else {
+            console.log("Worke like a pro");
+            this.props.navigation.navigate("AddShop", { firstTime: 1 });
+          }
           //this.props.navigation.navigate("App");
         }
       }
@@ -172,6 +209,18 @@ class LoginScreen extends React.Component {
           type: "danger",
           duration: 5000
         });
+      });
+    }
+  };
+
+  showPasswordTap = () => {
+    if (this.state.showPassword == true) {
+      this.setState({
+        showPassword: false
+      });
+    } else {
+      this.setState({
+        showPassword: true
       });
     }
   };
@@ -203,43 +252,67 @@ class LoginScreen extends React.Component {
           </Text>
         </View>
         <View style={styles.inputContainer}>
-          <EATextInput
-            autoCapitalize="none"
-            autoCompleteType="email"
-            value={this.state.email}
-            keyboardType="email-address"
-            placeholder="Email"
-            onChangeText={this._onChangeText("email")}
-            error={this.state.emailError}
-            onBlur={this._onBlurText("email", "emailError", "email")}
-          />
-          <EATextInput
-            secureTextEntry={true}
-            value={this.state.password}
-            placeholder="Password"
-            onChangeText={this._onChangeText("password")}
-            error={this.state.passwordError}
-            onBlur={this._onBlurText("password", "passwordError", "password")}
-          />
-          <Button block onPress={this._signInAsync}>
-            <Text>Log In</Text>
-          </Button>
-          <Button
-            transparent
-            onPress={this._redirectForgotPassword}
-            style={{ marginTop: 10, alignSelf: "center" }}
-          >
-            <Text>Forgot Password!</Text>
-          </Button>
+          <Grid style={[{ padding: 0 }]}>
+            <Row style={FormStyle.loginInputSection}>
+              <EATextInput
+                autoCapitalize="none"
+                autoCompleteType="email"
+                value={this.state.email}
+                keyboardType="email-address"
+                placeholder="Email"
+                onChangeText={this._onChangeText("email")}
+                error={this.state.emailError}
+                onBlur={this._onBlurText("email", "emailError", "email")}
+                returnKeyType={'next'}
+                ref={this.email}
+                onSubmitEditing={() => this.password.current.focusInput()} 
+              />
+            </Row>
+            <Row style={FormStyle.loginInputSection}>
+              <EATextInputRightButton
+                secureTextEntry={
+                  this.state.showPassword == false ? true : false
+                }
+                value={this.state.password}
+                placeholder="Password"
+                keyboardType="default"
+                onChangeText={this._onChangeText("password")}
+                error={this.state.passwordError}
+                onBlur={this._onBlurText(
+                  "required",
+                  "passwordError",
+                  "password"
+                )}
+                returnKeyType={'done'}
+                ref={this.password}
+                onSubmitEditing={() => this.password.current.blurInput()} 
+                btnPressHandler={this.showPasswordTap}
+                btnImage={
+                  this.state.showPassword == false ? "ios-eye" : "ios-eye-off"
+                }
+                btnImageType={"Ionicons"}
+              />
+            </Row>
+            <Row style={FormStyle.loginInputSection}>
+              <Button block onPress={this._signInAsync}>
+                <Text>Log In</Text>
+              </Button>
+            </Row>
+            <Row style={FormStyle.loginInputSection}>
+              <Button
+                transparent
+                onPress={this._redirectForgotPassword}
+                style={{ marginTop: 10, alignSelf: "center" }}
+              >
+                <Text>Forgot Password</Text>
+              </Button>
+            </Row>
+          </Grid>
         </View>
         <View style={styles.signupContainer}>
-          <Text> Doesn't have an account?</Text>
-          <Button
-            transparent
-            onPress={this._redirectSignup}
-            style={{ marginTop: 10 }}
-          >
-            <Text>Sign Up!</Text>
+          <Text>Don’t have an account?</Text>
+          <Button transparent onPress={this._redirectSignup}>
+            <Text>Sign Up</Text>
           </Button>
         </View>
       </Content>
@@ -258,7 +331,11 @@ class LoginScreen extends React.Component {
     return (
       <StyleProvider style={getTheme(commonColors)}>
         <SafeAreaView style={styles.container}>
-          <KeyboardAvoidingView style={styles.keyboardviewcontainer} enabled>
+          <KeyboardAvoidingView
+            style={styles.keyboardviewcontainer}
+            behavior={Platform.select({ android: null, ios: "padding" })}
+            enabled
+          >
             <StatusBar
               hidden={false}
               barStyle="light-content"
@@ -279,7 +356,7 @@ class LoginScreen extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: "#fff",
     justifyContent: "flex-start"
   },
@@ -293,15 +370,25 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   inputContainer: {
-    flex: 4,
+    flex: 3,
     backgroundColor: "#fff",
     justifyContent: "center",
-    margin: 30
+    padding: 0,
+    marginBottom: 0,
+    marginTop: 30,
+    marginLeft: 30,
+    marginRight: 30
   },
   signupContainer: {
     flex: 1,
+    flexDirection: "row",
     backgroundColor: "#fff",
-    alignItems: "center"
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 30,
+    marginTop: 0,
+    marginLeft: 30,
+    marginRight: 30
   },
   welcomeText: WelcomeHeader,
   welcomeDarkTexk: WelcomeHeaderDark

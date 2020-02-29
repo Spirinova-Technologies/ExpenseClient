@@ -10,7 +10,8 @@ import {
   View,
   H1,
   Toast,
-  StyleProvider
+  StyleProvider,
+  Fab
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
@@ -46,8 +47,17 @@ class PassbookScreen extends React.Component {
     headerShown: false
   };
 
-  handleTabFocus = () => {
-    this.getPayments();
+  handleTabFocus = async() => {
+    let passbookTab = await userPreferences.getPreferences(
+      userPreferences.passbookTab
+    );
+    if(passbookTab != null && passbookTab == "1"){
+      await userPreferences.setPreferences(
+        userPreferences.passbookTab,"0"
+      );
+      this.getPayments();
+    }
+    
   };
 
   setFilterModalVisible(visible) {
@@ -105,8 +115,8 @@ class PassbookScreen extends React.Component {
   }
 
   async componentDidMount() {
+    this.getPayments();
     this.props.navigation.addListener('didFocus', this.handleTabFocus)
-   // this.getPayments();
   }
 
   async componentDidUpdate() {}
@@ -137,7 +147,12 @@ class PassbookScreen extends React.Component {
       this.setState({ isLoading: false });
       if (serverCallPayments.status == 0) {
         var msg = serverCallPayments.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         if (
           serverCallPayments.transaction != null ||
@@ -220,6 +235,11 @@ class PassbookScreen extends React.Component {
     );
   };
 
+  addPassbook = async () => {
+    //Form type => 0:Add , 1:Edit
+    this.props.navigation.navigate("AddPayment", { formType: 0 });
+  };
+
   renderPayment = () => {
     if (this.state.arrPayments.length == 0) {
       return (
@@ -286,6 +306,17 @@ class PassbookScreen extends React.Component {
                 {this.state.isLoading ? <Loader /> : this.renderPayment()}
               </Grid>
             </Content>
+            <View>
+            <Fab
+              direction="up"
+              containerStyle={{}}
+              style={styles.fabButton}
+              position="bottomRight"
+              onPress={this.addPassbook}
+            >
+              <Icon name="add" />
+            </Fab>
+          </View>
           </Container>
         </StyleProvider>
         {this.state.filterModalVisible ? this.renderFilterPayment() : <></>}

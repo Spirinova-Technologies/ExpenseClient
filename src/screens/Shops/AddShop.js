@@ -5,7 +5,8 @@ import {
   AsyncStorage,
   StyleSheet,
   ScrollView,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  BackHandler
 } from "react-native";
 import {
   Container,
@@ -33,12 +34,14 @@ import ShopService from "../../services/shops";
 import { EATextInput, EATextLabel, EASpinner } from "../../components";
 import { isValid, userPreferences, utility } from "../../utility";
 import Loader from "../Shared/Loader";
+import HomeScreen from "../HomeScreen";
 
 class AddShop extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       formType: 0,
+      firstTime: 0,
       shopInfo: null,
       gstNumber: "",
       name: "",
@@ -52,6 +55,12 @@ class AddShop extends React.Component {
       addressError: "",
       isLoading: false
     };
+
+    this.gstNumber = React.createRef();
+    this.name = React.createRef();
+    this.address = React.createRef();
+    this.phone = React.createRef();
+    this.city = React.createRef();
   }
 
   static navigationOptions = {
@@ -59,8 +68,17 @@ class AddShop extends React.Component {
   };
 
   componentDidMount() {
+    BackHandler.addEventListener("hardwareBackPress", this.onBackPress);
     const { navigation } = this.props;
     const formType = navigation.getParam("formType");
+
+    const firstTime = navigation.getParam("firstTime");
+    console.log("firstTime : ",firstTime)
+    if (firstTime != undefined) {
+      if (firstTime == 1) {
+        this.setState({ firstTime: 1 });
+      }
+    }
 
     if (formType != undefined) {
       if (formType == 1) {
@@ -83,6 +101,18 @@ class AddShop extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    BackHandler.removeEventListener("hardwareBackPress", this.onBackPress);
+  }
+
+  onBackPress = () => {
+    if (this.state.firstTime == 0) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
   _onChangeText = key => text => {
     this.setState({
       [key]: text
@@ -93,17 +123,26 @@ class AddShop extends React.Component {
    * @description This function will update the error messages in dom.
    */
   _onBlurText = (validatorKey, errorKey, stateKey) => () => {
+    if (stateKey == "gstNumber" && this.state[stateKey] == "") {
+      this.setState({
+        [errorKey]: ""
+      });
+      return;
+    }
+
     this.setState({
       [errorKey]: isValid(validatorKey, this.state[stateKey])
     });
   };
 
-
   validate = async () => {
     let status = { valid: true, message: "" };
-    let nameError = isValid("name", this.state.name);
+    let nameError = isValid("alphanumericSpace", this.state.name);
     let phoneError = isValid("phone", this.state.phone);
-    let gstError = isValid("required", this.state.gstNumber);
+    let gstError = "";
+    if (this.state.gstNumber != "") {
+      gstError = isValid("gstinNumber", this.state.gstNumber);
+    }
     let addressError = isValid("required", this.state.address);
     let cityError = isValid("required", this.state.city);
 
@@ -182,8 +221,14 @@ class AddShop extends React.Component {
         this.setState({ isLoading: false });
         if (serverCallShop.status == 0) {
           var msg = serverCallShop.msg;
-          utility.showAlert(msg);
+          Toast.show({
+            text: msg,
+            buttonText: "Okay",
+            type: "danger",
+            duration: 5000
+          });
         } else {
+          var shopName = this.state.name
           this.setState({
             name: "",
             gstNumber: "",
@@ -198,7 +243,33 @@ class AddShop extends React.Component {
             type: "success",
             duration: 5000
           });
-          this.props.navigation.goBack();
+          console.log("this.state.firstTime : ",this.state.firstTime)
+          if (this.state.firstTime == 1) {
+            await userPreferences.setPreferences(
+              userPreferences.userShopId,
+              serverCallShop.shop.insertId + ""
+            );
+            await userPreferences.setPreferences(
+              userPreferences.userShopName,
+              shopName + ""
+            );
+            await userPreferences.setPreferences(
+              userPreferences.homeTab,"1"
+            );
+            await userPreferences.setPreferences(
+              userPreferences.supplierTab,"1"
+            );
+            await userPreferences.setPreferences(
+              userPreferences.billsTab,"1"
+            );
+            await userPreferences.setPreferences(
+              userPreferences.passbookTab,"1"
+            );
+
+            this.props.navigation.navigate("Home");
+          } else {
+            this.props.navigation.goBack();
+          }
         }
       }
     } catch (error) {
@@ -225,11 +296,12 @@ class AddShop extends React.Component {
               flexGrow: 1,
               justifyContent: "space-between"
             }}
+            showsHorizontalScrollIndicator={false}
           >
             <KeyboardAvoidingView>
               <Grid>
                 <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Contact Number"} />
+                  <EATextLabel labelText={"Contact Number*"} />
                   <EATextInput
                     autoCapitalize="none"
                     value={this.state.phone}
@@ -237,43 +309,63 @@ class AddShop extends React.Component {
                     onBlur={this._onBlurText("phone", "phoneError", "phone")}
                     error={this.state.phoneError}
                     onChangeText={this._onChangeText("phone")}
+                    returnKeyType={'next'}
+                    ref={this.phone}
+                    onSubmitEditing={() => this.name.current.focusInput()} 
                   />
                 </Row>
                 <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Shop Name"} />
+                  <EATextLabel labelText={"Shop Name*"} />
                   <EATextInput
-                    autoCapitalize="none"
+                    autoCapitalize="words"
                     value={this.state.name}
-                    keyboardType="default"
                     error={this.state.nameError}
-                    onBlur={this._onBlurText("name", "nameError", "name")}
+                    onBlur={this._onBlurText(
+                      "alphanumericSpace",
+                      "nameError",
+                      "name"
+                    )}
                     onChangeText={this._onChangeText("name")}
+                    returnKeyType={'next'}
+                    ref={this.name}
+                    onSubmitEditing={() => this.gstNumber.current.focusInput()} 
                   />
                 </Row>
                 <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"GST Number"} />
+                  <EATextLabel labelText={"GST Number (Optional)"} />
                   <EATextInput
-                    autoCapitalize="none"
+                    autoCapitalize="characters"
                     value={this.state.gstNumber}
-                    keyboardType="default"
                     error={this.state.gstError}
                     onBlur={this._onBlurText(
-                      "required",
+                      "gstinNumber",
                       "gstError",
                       "gstNumber"
                     )}
                     onChangeText={this._onChangeText("gstNumber")}
+                    returnKeyType={'next'}
+                    ref={this.gstNumber}
+                    onSubmitEditing={() => this.city.current.focusInput()} 
                   />
                 </Row>
                 <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Business Address"} />
+                  <EATextLabel labelText={"Street/City*"} />
                   <EATextInput
-                    autoCapitalize="none"
+                    autoCapitalize="words"
+                    value={this.state.city}
+                    error={this.state.cityError}
+                    onBlur={this._onBlurText("required", "cityError", "city")}
+                    onChangeText={this._onChangeText("city")}
+                    returnKeyType={'next'}
+                    ref={this.city}
+                    onSubmitEditing={() => this.address.current.focusInput()} 
+                  />
+                </Row>
+                <Row style={FormStyle.InputSection}>
+                  <EATextLabel labelText={"Business Address*"} />
+                  <EATextInput
+                    autoCapitalize="sentences"
                     value={this.state.address}
-                    multiline={true}
-                    numberOfLines={3}
-                    maxLength={130}
-                    keyboardType="default"
                     error={this.state.addressError}
                     onBlur={this._onBlurText(
                       "required",
@@ -281,17 +373,9 @@ class AddShop extends React.Component {
                       "address"
                     )}
                     onChangeText={this._onChangeText("address")}
-                  />
-                </Row>
-                <Row style={FormStyle.InputSection}>
-                  <EATextLabel labelText={"Street/City"} />
-                  <EATextInput
-                    autoCapitalize="none"
-                    value={this.state.city}
-                    keyboardType="default"
-                    error={this.state.cityError}
-                    onBlur={this._onBlurText("required", "cityError", "city")}
-                    onChangeText={this._onChangeText("city")}
+                    returnKeyType={'done'}
+                    ref={this.address}
+                    onSubmitEditing={() => this.address.current.blurInput()} 
                   />
                 </Row>
               </Grid>
@@ -314,14 +398,19 @@ class AddShop extends React.Component {
       <StyleProvider style={getTheme(commonColors)}>
         <Container>
           <Header noShadow>
-            <Left>
-              <Button
-                transparent
-                onPress={() => this.props.navigation.goBack()}
-              >
-                <Icon name="arrow-back" />
-              </Button>
-            </Left>
+            {this.state.firstTime == 0 ? (
+              <Left>
+                <Button
+                  transparent
+                  onPress={() => this.props.navigation.goBack()}
+                >
+                  <Icon name="arrow-back" />
+                </Button>
+              </Left>
+            ) : (
+              <></>
+            )}
+
             <Body>
               <Title style={FormStyle.headerColor}>
                 {" "}

@@ -17,6 +17,10 @@ class UserPreferences {
     this.profilePhoto  = 'profilePhoto',
     this.userShopId = 'userShopId'
     this.userShopName = 'userShopName'
+    this.homeTab = 'homeTab'
+    this.supplierTab = 'supplierTab'
+    this.billsTab = 'billsTab'
+    this.passbookTab = 'passbookTab'
     }
 
     setPreferences = (key,value) =>{
@@ -39,6 +43,10 @@ class UserPreferences {
         AsyncStorage.removeItem(this.firebaseToken)
         AsyncStorage.removeItem(this.userShopId)
         AsyncStorage.removeItem(this.userShopName)
+        AsyncStorage.removeItem(this.homeTab)
+        AsyncStorage.removeItem(this.supplierTab)
+        AsyncStorage.removeItem(this.billsTab)
+        AsyncStorage.removeItem(this.passbookTab)
     }
 
     clear(){

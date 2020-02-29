@@ -58,10 +58,28 @@ class BillScreen extends React.Component {
     this.filterCompletionHandler = this.filterCompletionHandler.bind(this);
   }
 
-  handleTabFocus = () => {
+  handleTabFocus = async() => {
     console.log("got worked")
-    this.getSuppliers();
-    this.getBills();
+    let supplierTab = await userPreferences.getPreferences(
+      userPreferences.supplierTab
+    );
+    if(supplierTab != null && supplierTab == "1"){
+      await userPreferences.setPreferences(
+        userPreferences.supplierTab,"0"
+      );
+      this.getSuppliers();
+    }
+
+    let billsTab = await userPreferences.getPreferences(
+      userPreferences.billsTab
+    );
+    if(billsTab != null && billsTab == "1"){
+      await userPreferences.setPreferences(
+        userPreferences.billsTab,"0"
+      );
+      this.getBills();
+    }
+    
   };
 
   setFilterModalVisible(visible) {
@@ -136,6 +154,8 @@ class BillScreen extends React.Component {
   }
 
   async componentDidMount() {
+    this.getSuppliers();
+    this.getBills();
     this.props.navigation.addListener('didFocus', this.handleTabFocus)
   }
 
@@ -167,7 +187,12 @@ class BillScreen extends React.Component {
       this.setState({ isLoading: false });
       if (serverCallBill.status == 0) {
         var msg = serverCallBill.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         if (serverCallBill.bills != null || serverCallBill.bills != "") {
           this.setState({
@@ -209,7 +234,12 @@ class BillScreen extends React.Component {
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         if (supplierData.supplier != null) {
           this.setState({

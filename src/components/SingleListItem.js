@@ -15,7 +15,7 @@ class EASingleListItem extends Component {
       selectedId
     } = this.props;
     return (
-      <TouchableOpacity onPress={() => pressHandler(data)}>
+      <TouchableOpacity onPress={() => pressHandler(data)} activeOpacity={1}>
         <Grid style={styles.item}>
           <Row style={styles.row}>
             <Col size={70}>

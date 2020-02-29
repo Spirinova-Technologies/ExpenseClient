@@ -5,6 +5,8 @@ import { createDrawerNavigator } from "react-navigation-drawer";
 import {
   HomeScreen,
   LoginScreen,
+  OtpScreen,
+  ChangePassword,
   SignupScreen,
   ForgotPassword,
   AuthLoadingScreen,
@@ -16,6 +18,7 @@ import {
   AddPaymentScreen,
   AddBillScreen,
   AddShopScreen,
+  AddMoney,
   ShopScreen,
   ShopDetail,
   AboutScreen,
@@ -38,9 +41,11 @@ const AppTabNavigation = createMaterialTopTabNavigator(
       showIcon: true,
       activeTintColor: "#FE3852",
       inactiveTintColor: "#637381",
+      upperCaseLabel: false,
       style: {
         backgroundColor: "#FFF",
-        color: "#637381"
+        color: "#637381",
+        textTransform: 'capitalize'
       },
       indicatorStyle: {
         backgroundColor: "#FE3852"
@@ -67,7 +72,7 @@ const AppTabNavigation = createMaterialTopTabNavigator(
         return (
           <Icon type={type} name={iconName} style={{ color: tintColor }} />
         );
-      }
+      },
     })
   },
   {
@@ -106,12 +111,6 @@ const AppStackNavigation = createStackNavigator(
     },
     Shops: {
       screen: ShopScreen,
-      // navigationOptions: {
-      //   header: ({ scene, previous, navigation }) => {
-      //     // const { options } = scene.descriptor;
-      //     return <MainScreen title={"Shops"} navigation={navigation} />;
-      //   }
-      // }
     },
     Support: {
       screen: AboutScreen,
@@ -130,6 +129,9 @@ const AppStackNavigation = createStackNavigator(
           return <MainScreen title={"Profile"} navigation={navigation} />;
         }
       }
+    },
+    AddMoney: {
+      screen: AddMoney
     }
   },
   {
@@ -149,7 +151,7 @@ const AppDrawerNavigation = createDrawerNavigator(
 );
 
 const AuthStack = createStackNavigator(
-  { SignIn: LoginScreen, SignUp: SignupScreen, ForgotPassword: ForgotPassword },
+  { SignIn: LoginScreen, SignUp: SignupScreen, ForgotPassword: ForgotPassword,OtpVerification:OtpScreen,ChangePassword:ChangePassword },
   { initialRouteName: "SignIn" }
 );
 

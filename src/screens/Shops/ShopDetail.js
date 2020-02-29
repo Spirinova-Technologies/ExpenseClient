@@ -75,7 +75,7 @@ class ShopDetail extends Component {
             </Col>
             <Col size={50} style={styles.buttonRightCol}>
               <Row>
-                <Button
+                {/* <Button
                   small
                   dark
                   transparent
@@ -87,7 +87,7 @@ class ShopDetail extends Component {
                     name="pencil"
                     style={styles.iconText}
                   />
-                </Button>
+                </Button> */}
               </Row>
             </Col>
           </Row>

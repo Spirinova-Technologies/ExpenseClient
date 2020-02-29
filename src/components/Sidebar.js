@@ -54,7 +54,10 @@ class EASideBar extends Component {
       businessName: "",
       shopName: ""
     };
+    this.willFocusSideBar = null;
   }
+
+
 
   setUserData = async () => {
     let firstName = await userPreferences.getPreferences(
@@ -82,13 +85,20 @@ class EASideBar extends Component {
 
 
   async componentDidMount() {
-    this.setUserData();
-    // this.props.navigation.addListener('didFocus', this.handleTabFocus)
-    
+    this.willFocusSideBar = this.props.navigation.addListener(
+      "willFocus",
+      this.handleTabFocus
+    );
+  }
+
+  async componentWillUnmount() {
+    if (this.willFocusSideBar != null) {
+      this.willFocusSideBar.remove();
+    }
   }
 
   handleTabFocus = () => {
-    
+    this.setUserData();
   };
 
   redirectToPath = path => {
@@ -107,8 +117,8 @@ class EASideBar extends Component {
       <StyleProvider style={getTheme(commonColors)}>
         <SafeAreaView style={{ flex: 1 }}>
           <Header span>
-            <Left>
-              <Thumbnail source={require("../../assets/icon.png")} />
+            <Left style={[{alignItems:'center'}]}>
+              {/* <Thumbnail source={require("../../assets/icon.png")}  /> */}
             </Left>
             <Body>
               <Title
@@ -158,7 +168,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "flex-start",
     fontFamily: "Roboto"
-  }
+  },
+  
 });
 
 export default EASideBar;

@@ -5,7 +5,8 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Platform
 } from "react-native";
 
 import {
@@ -16,16 +17,21 @@ import {
   Button,
   Thumbnail,
   Toast,
-  Spinner
+  Spinner,
+  Header
 } from "native-base";
 
 import { Row, Grid } from "react-native-easy-grid";
 import getTheme from "../../../native-base-theme/components";
 import commonColors from "../../../native-base-theme/variables/commonColor";
 import { WelcomeHeader, WelcomeHeaderDark } from "./AuthStyles";
-import { EATextInput, EASpinner } from "../../components";
+import {
+  EATextInput,
+  EASpinner,
+  EATextInputRightButton
+} from "../../components";
 import UserService from "../../services/user";
-import { isValid,utility, userPreferences } from "../../utility";
+import { isValid, utility, userPreferences } from "../../utility";
 
 class SignupScreen extends React.Component {
   constructor(props) {
@@ -36,7 +42,6 @@ class SignupScreen extends React.Component {
         lastName: "",
         email: "",
         password: "",
-        confirmPassword: "",
         businessName: "",
         phone: ""
       },
@@ -45,12 +50,19 @@ class SignupScreen extends React.Component {
         lastNameError: "",
         emailError: "",
         passwordError: "",
-        confirmPasswordError: "",
         businessNameError: "",
         phoneError: ""
       },
+      showPassword: false,
       isLoading: false
     };
+    this.firstName = React.createRef();
+    this.lastName = React.createRef();
+    this.email = React.createRef();
+    this.password = React.createRef();
+    this.businessName = React.createRef();
+    this.phone = React.createRef();
+    this.showPasswordTap = this.showPasswordTap.bind(this);
   }
 
   static navigationOptions = {
@@ -76,7 +88,6 @@ class SignupScreen extends React.Component {
     let lastNameError = isValid("lastName", user.lastName);
     let emailError = isValid("email", user.email);
     let passwordError = isValid("password", user.password);
-    let confirmPasswordError = isValid("password", user.confirmPassword);
     let businessNameError = isValid("businessName", user.businessName);
     let phoneError = isValid("phone", user.phone);
 
@@ -90,7 +101,6 @@ class SignupScreen extends React.Component {
             lastNameError,
             emailError,
             passwordError,
-            confirmPasswordError,
             businessNameError,
             phoneError
           }
@@ -127,83 +137,83 @@ class SignupScreen extends React.Component {
           duration: 5000
         });
       } else {
-        if (this.state.user.password != this.state.user.confirmPassword) {
+        this.setState({ isLoading: true });
+        var user = {
+          first_name: this.state.user.firstName,
+          last_name: this.state.user.lastName,
+          email_id: this.state.user.email,
+          password: this.state.user.password,
+          phone_number: this.state.user.phone,
+          business_name: this.state.user.businessName
+        };
+
+        let authSign = await UserService.signup(user);
+        // console.log("authSign : ", authSign);
+        if (authSign.status == 0) {
+          var msg = authSign.msg;
+          this.setState({ isLoading: false });
           Toast.show({
-            text: `Password and Confirm Password should be same.`,
+            text: msg,
             buttonText: "Okay",
             type: "danger",
             duration: 5000
           });
         } else {
-          this.setState({ isLoading: true });
-          var user = {
-            first_name: this.state.user.firstName,
-            last_name: this.state.user.lastName,
+          let auth = await UserService.login({
             email_id: this.state.user.email,
-            password: this.state.user.password,
-            phone_number: this.state.user.phone,
-            business_name: this.state.user.businessName
-          };
+            password: this.state.user.password
+          });
 
-       //   delete user.confirmPassword; // Clear confirm password!
-          let authSign = await UserService.signup(user);
-         // console.log("authSign : ", authSign);
-          if (authSign.status == 0) {
-            var msg = authSign.msg;
+          if (auth.status == 0) {
+            var msg = auth.msg;
             this.setState({ isLoading: false });
-            utility.showAlert(msg);
-          } else {
-            let auth = await UserService.login({
-              email_id: this.state.user.email,
-              password: this.state.user.password
+            Toast.show({
+              text: msg,
+              buttonText: "Okay",
+              type: "danger",
+              duration: 5000
             });
-
-            if (auth.status == 0) {
-              var msg = auth.msg;
-              this.setState({ isLoading: false });
-              utility.showAlert(msg);
-            } else {
-           //   console.log("auth : ", auth.users);
-              var msg = auth.msg;
-              userPreferences.setPreferences(
-                userPreferences.authToken,
-                "Bearer " + auth.token
-              );
-              userPreferences.setPreferences(
-                userPreferences.userId,
-                auth.users.id + ""
-              );
-              userPreferences.setPreferences(
-                userPreferences.firstName,
-                auth.users.first_name
-              );
-              userPreferences.setPreferences(
-                userPreferences.lastName,
-                auth.users.last_name
-              );
-              userPreferences.setPreferences(
-                userPreferences.emailId,
-                auth.users.email_id
-              );
-              userPreferences.setPreferences(
-                userPreferences.phoneNumber,
-                auth.users.phone_number + ""
-              );
-              userPreferences.setPreferences(
-                userPreferences.address,
-                auth.users.address
-              );
-              userPreferences.setPreferences(
-                userPreferences.businessName,
-                auth.users.business_name
-              );
-              userPreferences.setPreferences(
-                userPreferences.profilePhoto,
-                auth.users.profile_photo
-              );
-              this.setState({ isLoading: false });
-              this.props.navigation.navigate("Shops");
-            }
+          } else {
+            //   console.log("auth : ", auth.users);
+            var msg = auth.msg;
+            userPreferences.setPreferences(
+              userPreferences.authToken,
+              "Bearer " + auth.token
+            );
+            userPreferences.setPreferences(
+              userPreferences.userId,
+              auth.users.id + ""
+            );
+            userPreferences.setPreferences(
+              userPreferences.firstName,
+              auth.users.first_name
+            );
+            userPreferences.setPreferences(
+              userPreferences.lastName,
+              auth.users.last_name
+            );
+            userPreferences.setPreferences(
+              userPreferences.emailId,
+              auth.users.email_id
+            );
+            userPreferences.setPreferences(
+              userPreferences.phoneNumber,
+              auth.users.phone_number + ""
+            );
+            userPreferences.setPreferences(
+              userPreferences.address,
+              auth.users.address
+            );
+            userPreferences.setPreferences(
+              userPreferences.businessName,
+              auth.users.business_name
+            );
+            userPreferences.setPreferences(
+              userPreferences.profilePhoto,
+              auth.users.profile_photo
+            );
+            this.setState({ isLoading: false });
+            this.props.navigation.navigate("AddShop", { firstTime: 1 });
           }
         }
       }
@@ -222,6 +232,18 @@ class SignupScreen extends React.Component {
     }
   };
 
+  showPasswordTap = () => {
+    if (this.state.showPassword == true) {
+      this.setState({
+        showPassword: false
+      });
+    } else {
+      this.setState({
+        showPassword: true
+      });
+    }
+  };
+
   _redirectSignIn = () => {
     this.props.navigation.navigate("SignIn");
   };
@@ -234,134 +256,143 @@ class SignupScreen extends React.Component {
 
   _renderSignUp = () => {
     return (
-      <Content padder contentContainerStyle={{
-        flexGrow: 1,
-      }}>
-       
-          <KeyboardAvoidingView behavior="padding" enabled>
-            <Grid>
-              <Row size={30} style={styles.logoContainer}>
-                <Thumbnail
-                  square
-                  large
-                  style={{ width: 100, height: 100 }}
-                  source={require("../../../assets/icon.png")}
-                />
-                <Text style={styles.welcomeText}>
-                  Hisaab <Text style={styles.welcomeDarkTexk}>App</Text>
-                </Text>
-              </Row>
-              <Row size={70} style={styles.inputContainer}>
-                <EATextInput
-                  autoCapitalize="words"
-                  value={this.state.user.firstName}
-                  keyboardType="default"
-                  placeholder="First Name"
-                  onChangeText={this._onChangeText("firstName")}
-                  error={this.state.validator.firstNameError}
-                  onBlur={this._onBlurText(
-                    "firstName",
-                    "firstNameError",
-                    "firstName"
-                  )}
-                />
-                <EATextInput
-                  autoCapitalize="words"
-                  value={this.state.user.lastName}
-                  keyboardType="default"
-                  placeholder="Last Name"
-                  onChangeText={this._onChangeText("lastName")}
-                  error={this.state.validator.lastNameError}
-                  onBlur={this._onBlurText(
-                    "lastName",
-                    "lastNameError",
-                    "lastName"
-                  )}
-                />
-                <EATextInput
-                  autoCapitalize="words"
-                  value={this.state.user.businessName}
-                  keyboardType="default"
-                  placeholder="Business Name"
-                  onChangeText={this._onChangeText("businessName")}
-                  error={this.state.validator.businessNameError}
-                  onBlur={this._onBlurText(
-                    "businessName",
-                    "businessNameError",
-                    "businessName"
-                  )}
-                />
-                <EATextInput
-                  autoCapitalize="none"
-                  value={this.state.user.email}
-                  autoCompleteType="email"
-                  keyboardType="email-address"
-                  placeholder="Email"
-                  onChangeText={this._onChangeText("email")}
-                  error={this.state.validator.emailError}
-                  onBlur={this._onBlurText("email", "emailError", "email")}
-                />
-                <EATextInput
-                  autoCapitalize="none"
-                  autoCompleteType="tel"
-                  value={this.state.user.phone}
-                  keyboardType="number-pad"
-                  placeholder="Phone Number"
-                  onChangeText={this._onChangeText("phone")}
-                  error={this.state.validator.phoneError}
-                  onBlur={this._onBlurText("phone", "phoneError", "phone")}
-                />
-                <EATextInput
-                  secureTextEntry={true}
-                  value={this.state.user.password}
-                  placeholder="password"
-                  placeholder="Password"
-                  onChangeText={this._onChangeText("password")}
-                  error={this.state.validator.passwordError}
-                  onBlur={this._onBlurText(
-                    "password",
-                    "passwordError",
-                    "password"
-                  )}
-                />
-                <EATextInput
-                  secureTextEntry={true}
-                  value={this.state.user.confirmPassword}
-                  placeholder="password"
-                  placeholder="Confirm Password"
-                  onChangeText={this._onChangeText("confirmPassword")}
-                  error={this.state.validator.confirmPasswordError}
-                  onBlur={this._onBlurText(
-                    "password",
-                    "confirmPasswordError",
-                    "confirmPassword"
-                  )}
-                />
-                <Button block onPress={this._signUpAsync}>
-                  <Text>Sign Up</Text>
+      <Content
+        padder
+        contentContainerStyle={{
+          flexGrow: 1
+        }}
+      >
+        <KeyboardAvoidingView behavior="padding" enabled>
+          <Grid>
+            <Row size={30} style={styles.logoContainer}>
+              <Thumbnail
+                square
+                large
+                style={{ width: 100, height: 100 }}
+                source={require("../../../assets/icon.png")}
+              />
+              <Text style={styles.welcomeText}>
+                Hisaab <Text style={styles.welcomeDarkTexk}>App</Text>
+              </Text>
+            </Row>
+            <Row size={70} style={styles.inputContainer}>
+              <EATextInput
+                autoCapitalize="words"
+                value={this.state.user.firstName}
+                placeholder="First Name"
+                onChangeText={this._onChangeText("firstName")}
+                error={this.state.validator.firstNameError}
+                onBlur={this._onBlurText(
+                  "firstName",
+                  "firstNameError",
+                  "firstName"
+                )}
+                returnKeyType={'next'}
+                ref={this.firstName}
+                onSubmitEditing={() => this.lastName.current.focusInput()} 
+              />
+              <EATextInput
+                autoCapitalize="words"
+                value={this.state.user.lastName}
+                placeholder="Last Name"
+                onChangeText={this._onChangeText("lastName")}
+                error={this.state.validator.lastNameError}
+                onBlur={this._onBlurText(
+                  "lastName",
+                  "lastNameError",
+                  "lastName"
+                )}
+                returnKeyType={'next'}
+                ref={this.lastName}
+                onSubmitEditing={() => this.businessName.current.focusInput()} 
+              />
+              <EATextInput
+                autoCapitalize="words"
+                value={this.state.user.businessName}
+                placeholder="Business Name"
+                onChangeText={this._onChangeText("businessName")}
+                error={this.state.validator.businessNameError}
+                onBlur={this._onBlurText(
+                  "businessName",
+                  "businessNameError",
+                  "businessName"
+                )}
+                returnKeyType={'next'}
+                ref={this.businessName}
+                onSubmitEditing={() => this.email.current.focusInput()} 
+              />
+              <EATextInput
+                autoCapitalize="none"
+                autoCompleteType="email"
+                value={this.state.user.email}
+                keyboardType="email-address"
+                placeholder="Email"
+                onChangeText={this._onChangeText("email")}
+                error={this.state.validator.emailError}
+                onBlur={this._onBlurText("email", "emailError", "email")}
+                returnKeyType={'next'}
+                ref={this.email}
+                onSubmitEditing={() => this.phone.current.focusInput()} 
+              />
+              <EATextInput
+                autoCapitalize="none"
+                autoCompleteType="tel"
+                value={this.state.user.phone}
+                keyboardType="number-pad"
+                placeholder="Phone Number"
+                onChangeText={this._onChangeText("phone")}
+                error={this.state.validator.phoneError}
+                onBlur={this._onBlurText("phone", "phoneError", "phone")}
+                returnKeyType={'next'}
+                ref={this.phone}
+                onSubmitEditing={() => this.password.current.focusInput()} 
+              />
+              <EATextInputRightButton
+                secureTextEntry={
+                  this.state.showPassword == false ? true : false
+                }
+                value={this.state.user.password}
+                placeholder="password"
+                onChangeText={this._onChangeText("password")}
+                error={this.state.validator.passwordError}
+                onBlur={this._onBlurText(
+                  "password",
+                  "passwordError",
+                  "password"
+                )}
+                returnKeyType={'done'}
+                ref={this.password}
+                onSubmitEditing={() => this.password.current.blurInput()} 
+                btnPressHandler={this.showPasswordTap}
+                btnImage={
+                  this.state.showPassword == false ? "ios-eye" : "ios-eye-off"
+                }
+                btnImageType={"Ionicons"}
+              />
+              <Button block onPress={this._signUpAsync}>
+                <Text>Sign Up</Text>
+              </Button>
+              <Row style={styles.signinContainer}>
+                <Text> Already have an account?</Text>
+                <Button transparent onPress={this._redirectSignIn}>
+                  <Text>Sign In</Text>
                 </Button>
-                <Row style={styles.signinContainer}>
-                  <Text> Already have an account?</Text>
-                  <Button
-                    transparent
-                    onPress={this._redirectSignIn}
-                    style={{ marginTop: 10 }}
-                  >
-                    <Text>Sign In</Text>
-                  </Button>
-                </Row>
               </Row>
-            </Grid>
-          </KeyboardAvoidingView>
+            </Row>
+          </Grid>
+        </KeyboardAvoidingView>
       </Content>
     );
   };
 
   _renderLoader = () => {
     return (
-      <Content padder contentContainerStyle={{
-        flexGrow: 1,
-      }}>
+      <Content
+        padder
+        contentContainerStyle={{
+          flexGrow: 1
+        }}
+      >
         <EASpinner color="red" text="Signing up..." />
       </Content>
     );
@@ -370,20 +401,22 @@ class SignupScreen extends React.Component {
   render() {
     return (
       <>
-        <StatusBar
-          hidden={false}
-          backgroundColor="#FE3852"
-          barStyle="dark-content"
-          translucent={true}
-        />
         <StyleProvider style={getTheme(commonColors)}>
-          <KeyboardAvoidingView style={styles.keyboardviewcontainer} enabled>
+          <SafeAreaView style={styles.container}>
+            <StatusBar
+              hidden={false}
+              backgroundColor="#FE3852"
+              barStyle="dark-content"
+              translucent={true}
+            />
+
             <Container>
+              {Platform.OS === 'ios'? (<></>):(<Header noShadow style={styles.header}></Header>)}
               {this.state.isLoading
                 ? this._renderLoader()
                 : this._renderSignUp()}
             </Container>
-          </KeyboardAvoidingView>
+          </SafeAreaView>
         </StyleProvider>
       </>
       // </ScrollView>
@@ -400,6 +433,9 @@ const styles = StyleSheet.create({
   keyboardviewcontainer: {
     flex: 1
   },
+  header: {
+    backgroundColor: "#FFF"
+  },
   logoContainer: {
     flexDirection: "column",
     backgroundColor: "#FFF",
@@ -409,14 +445,19 @@ const styles = StyleSheet.create({
   inputContainer: {
     paddingLeft: 15,
     paddingRight: 15,
+    marginTop: 10,
     flexDirection: "column",
     backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "stretch"
   },
   signinContainer: {
-    marginTop: 30,
-    flexDirection: "column",
+    marginBottom: 10,
+    marginTop: 0,
+    marginLeft: 30,
+    marginRight: 30,
+    flex: 1,
+    flexDirection: "row",
     backgroundColor: "#FFF",
     justifyContent: "center",
     alignItems: "center",

@@ -10,6 +10,20 @@ class ShopService extends BaseService {
     super();
   }
 
+
+/**
+   * @description This function will call the add Money api.
+   */
+  addMoney = param => {
+    return this.webServiceCall(`${this.base}${WebUrlUtility.addMoney}`, param, 1)
+      .then(response => {
+        return response.data;
+      })
+      .catch(error => {
+        throw error;
+      });
+  };
+
   /**
    * @description This function will call the add Shop api.
    */

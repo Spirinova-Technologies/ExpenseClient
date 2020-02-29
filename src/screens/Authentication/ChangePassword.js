@@ -30,13 +30,12 @@ import {
 } from "../../utility";
 import Loader from "../Shared/Loader";
 
-class ForgotPassword extends React.Component {
+class ChangePassword extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      email: "",
-      emailError: "",
       userInfo: null,
+      password: "",
       isLoading: false
     };
   }
@@ -45,26 +44,31 @@ class ForgotPassword extends React.Component {
     headerShown: false
   };
 
-  componentDidMount() {}
-  /**
-   * @description This function will update the error messages in dom.
-   */
+  componentDidMount() {
+    const { navigation } = this.props;
+    const userInfo = navigation.getParam("userInfo");
+    this.setState({ userInfo: userInfo });
+  }
+
   onBlurText = (validatorKey, errorKey, stateKey) => () => {
     this.setState({
       [errorKey]: isValid(validatorKey, this.state[stateKey])
     });
   };
 
-  /**
-   * @description This function will validate the user email  before api execution
-   */
+  onBlurText = (validatorKey, errorKey, stateKey) => () => {
+    this.setState({
+      [errorKey]: isValid(validatorKey, this.state[stateKey])
+    });
+  };
+
   validate = async () => {
     let status = { valid: true, message: "" };
-    let emailError = isValid("email", this.state.email);
+    let passwordError = isValid("password", this.state.password);
     let promise = new Promise((resolve, reject) => {
       this.setState(
         {
-          emailError,
+          passwordError
         },
         () => {
           if (this.state.emailError) {
@@ -79,7 +83,7 @@ class ForgotPassword extends React.Component {
     return promise;
   };
 
-  forgotPassword = async () => {
+  changePassword = async () => {
     try {
       let status = await this.validate();
       if (!status.valid) {
@@ -92,26 +96,67 @@ class ForgotPassword extends React.Component {
         });
       } else {
         this.setState({ isLoading: true });
-        let serverCallUser = await UserService.forgotPassword({
-          emailId: this.state.email
+        let serverCallUser = await UserService.changePassword({
+          userId: this.state.userInfo.id,
+          change_password: this.state.password
         });
-        this.setState({ isLoading: false });
+
         if (serverCallUser.status == 0) {
           var msg = serverCallUser.msg;
+          this.setState({ isLoading: false });
           utility.showAlert(msg);
         } else {
-          console.log("userInfo : ", serverCallUser.userInfo);
-          var msg = serverCallUser.msg;
-          this.setState({ userInfo: serverCallUser.userInfo });
-          Toast.show({
-            text: msg,
-            buttonText: "Okay",
-            type: "success",
-            duration: 5000
+          let auth = await UserService.login({
+            email_id: this.state.userInfo.email_id,
+            password: this.state.password
           });
-          this.props.navigation.navigate("OtpVerification", {
-            userInfo: serverCallUser.userInfo
-          });
+
+          if (auth.status == 0) {
+            var msg = auth.msg;
+            this.setState({ isLoading: false });
+            utility.showAlert(msg);
+          } else {
+            //   console.log("auth : ", auth.users);
+            var msg = auth.msg;
+            userPreferences.setPreferences(
+              userPreferences.authToken,
+              "Bearer " + auth.token
+            );
+            userPreferences.setPreferences(
+              userPreferences.userId,
+              auth.users.id + ""
+            );
+            userPreferences.setPreferences(
+              userPreferences.firstName,
+              auth.users.first_name
+            );
+            userPreferences.setPreferences(
+              userPreferences.lastName,
+              auth.users.last_name
+            );
+            userPreferences.setPreferences(
+              userPreferences.emailId,
+              auth.users.email_id
+            );
+            userPreferences.setPreferences(
+              userPreferences.phoneNumber,
+              auth.users.phone_number + ""
+            );
+            userPreferences.setPreferences(
+              userPreferences.address,
+              auth.users.address
+            );
+            userPreferences.setPreferences(
+              userPreferences.businessName,
+              auth.users.business_name
+            );
+            userPreferences.setPreferences(
+              userPreferences.profilePhoto,
+              auth.users.profile_photo
+            );
+            this.setState({ isLoading: false });
+            this.props.navigation.navigate("Shops");
+          }
         }
       }
     } catch (error) {
@@ -139,7 +184,7 @@ class ForgotPassword extends React.Component {
     });
   };
 
-  renderForgotPassword = () => {
+  renderChangePassword = () => {
     return (
       <Content padder contentContainerStyle={styles.container}>
         <View style={styles.logoContainer}>
@@ -151,18 +196,20 @@ class ForgotPassword extends React.Component {
             Hisaab <Text style={WelcomeHeaderDark}>App</Text>
           </Text>
         </View>
+
         <View style={styles.inputContainer}>
+        <Text style={styles.messageLabel}>Enter new password</Text>
           <EATextInput
+           secureTextEntry={true}
             autoCapitalize="none"
-            autoCompleteType="email"
-            value={this.state.email}
-            keyboardType="email-address"
-            placeholder="Email"
-            onChangeText={this.onChangeText("email")}
-            error={this.state.emailError}
-            onBlur={this.onBlurText("email", "emailError", "email")}
+            value={this.state.password}
+            keyboardType="default"
+            placeholder="Password"
+            onChangeText={this.onChangeText("password")}
+            error={this.state.passwordError}
+            onBlur={this.onBlurText("password", "passwordError", "password")}
           />
-          <Button block onPress={this.forgotPassword}>
+          <Button block onPress={this.changePassword}>
             <Text>Submit</Text>
           </Button>
         </View>
@@ -191,7 +238,7 @@ class ForgotPassword extends React.Component {
               translucent={true}
             />
             <Container>
-              {this.state.isLoading ? <Loader /> : this.renderForgotPassword()}
+              {this.state.isLoading ? <Loader /> : this.renderChangePassword()}
             </Container>
           </KeyboardAvoidingView>
         </SafeAreaView>
@@ -209,8 +256,16 @@ const styles = StyleSheet.create({
   keyboardviewcontainer: {
     flex: 1
   },
+  messageLabel: {
+    fontFamily: "Roboto",
+    fontSize: 15,
+    fontWeight: "500",
+    paddingBottom: 8,
+    alignSelf:"center",
+    marginBottom:10
+  },
   logoContainer: {
-    flex: 3,
+    flex: 2,
     backgroundColor: "#fff",
     justifyContent: "flex-end",
     alignItems: "center"
@@ -232,4 +287,5 @@ const styles = StyleSheet.create({
   }
 });
 
-export default ForgotPassword;
+
+export default ChangePassword;

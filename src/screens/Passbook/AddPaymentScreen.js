@@ -32,13 +32,17 @@ import {
   EATextInput,
   EATextLabel,
   EADatePicker,
-  EAPicker
+  EAPicker,
+  FileItem
 } from "../../components";
 import Loader from "../Shared/Loader";
-import { isValid, userPreferences, utility, Enums } from "../../utility";
+import { isValid, userPreferences, utility, Enums ,createFormData} from "../../utility";
 import BillService from "../../services/bills";
 import SupplierService from "../../services/supplier";
 import PaymentService from "../../services/payments";
+import Constants from "expo-constants";
+import * as Permissions from "expo-permissions";
+import * as ImagePicker from "expo-image-picker";
 
 class AddPaymentScreen extends React.Component {
   constructor(props) {
@@ -48,29 +52,82 @@ class AddPaymentScreen extends React.Component {
       payInfo: null,
       arrSuppliers: [],
       arrCategories: [],
+      arrPaymentModes: [],
       arrBills: [],
+      paymentImage: null,
       supplier: 0,
-      billId: 0,
       paymentAmount: "",
       description: "",
       typeId: 0,
-      categoryId: 0,
+      category: 0,
       date: new Date(),
       mode: 0,
       paymentAmountError: "",
       supplierError: "",
-      billIdError: "",
       typeIdError: "",
-      categoryIdError: "",
+      categoryError: "",
       dateError: "",
       modeError: "",
       descriptionError: "",
       isLoading: false
     };
+    this.fileHandler = this.fileHandler.bind(this);
   }
 
   static navigationOptions = {
     headerShown: false
+  };
+
+  getPermissionAsyncCameraRoll = async () => {
+    if (Constants.platform.ios) {
+      const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+      this.setState({ hasCameraPermission: status === "granted" });
+      if (status !== "granted") {
+        alert("Sorry, we need camera roll permissions to make this work!");
+      }
+    }
+  };
+
+  fileHandler(index,type) {
+    this.setState({
+      paymentImage: null
+    });
+    console.log("index : ", index);
+  }
+
+  selectImage = async () => {
+    const permission = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+    if (permission.status !== "granted") {
+      Toast.show({
+        text: "Sorry, we need camera roll permissions to make this work.",
+        buttonText: "Okay",
+        type: "success",
+        duration: 5000
+      });
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsMultipleSelection: true,
+      allowsEditing: false,
+      quality: 1
+    });
+
+    if (!result.cancelled) {
+      console.log(" result : ", result);
+
+      let filename = await result.uri.substring(
+        result.uri.lastIndexOf("/") + 1,
+        result.uri.length
+      );
+      var fileDic = result;
+      fileDic.filename = filename;
+      this.setState({
+        paymentImage: fileDic
+      });
+      // this.setState({ billImage: result });
+    }
   };
 
   onChangeText = key => text => {
@@ -79,8 +136,7 @@ class AddPaymentScreen extends React.Component {
         [key + "Error"]: "",
         [key]: text,
         supplier: 0,
-        billId: 0,
-        categoryId: 0,
+        category: 0,
         arrBills: []
       });
     } else if (key == "supplier" && text != 0) {
@@ -94,12 +150,7 @@ class AddPaymentScreen extends React.Component {
           this.getSupplierBills();
         }
       );
-    } else if (key == "billId" && text != 0) {
-      this.setState({
-        [key + "Error"]: "",
-        [key]: text
-      });
-    } else if (key == "categoryId" && text != 0) {
+    } else if (key == "category" && text != 0) {
       this.setState({
         [key + "Error"]: "",
         [key]: text
@@ -125,6 +176,7 @@ class AddPaymentScreen extends React.Component {
   async componentDidMount() {
     this.getSuppliers();
     this.getCategories();
+    this.getPermissionAsyncCameraRoll();
   }
 
   getSuppliers = async () => {
@@ -141,7 +193,12 @@ class AddPaymentScreen extends React.Component {
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         if (supplierData.supplier != null) {
           var arrSupplier = [];
@@ -175,9 +232,15 @@ class AddPaymentScreen extends React.Component {
       this.setState({ isLoading: true });
       let categoryData = await PaymentService.getCategories(userId);
       this.setState({ isLoading: false });
+      console.log("categoryData : ", categoryData);
       if (categoryData.status == 0) {
         var msg = categoryData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         if (categoryData.category != null) {
           var arrCategorie = [];
@@ -190,6 +253,20 @@ class AddPaymentScreen extends React.Component {
           }
           this.setState({
             arrCategories: arrCategorie
+          });
+        }
+
+        if (categoryData.payment_mode != null) {
+          var arrPaymentMode = [];
+          for (let i = 0; i < categoryData.payment_mode.length; i++) {
+            let dicPaymentMode = {
+              key: categoryData.payment_mode[i].id,
+              text: categoryData.payment_mode[i].payment_name
+            };
+            arrPaymentMode.push(dicPaymentMode);
+          }
+          this.setState({
+            arrPaymentModes: arrPaymentMode
           });
         }
       }
@@ -216,7 +293,12 @@ class AddPaymentScreen extends React.Component {
       this.setState({ isLoading: false });
       if (billsData.status == 0) {
         var msg = billsData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         if (billsData.bills != null) {
           var arrBill = [];
@@ -247,18 +329,17 @@ class AddPaymentScreen extends React.Component {
   validate = async () => {
     let status = { valid: true, message: "" };
     let dateError = isValid("required", this.state.date);
-    let paymentAmountError = isValid("required", this.state.paymentAmount);
+    let paymentAmountError = isValid("numeric", this.state.paymentAmount);
     let typeIdError = this.state.typeId == 0 ? "Please select Type Id" : "";
     let modeError = this.state.mode == 0 ? "Please select Mode" : "";
-    let categoryIdError = "";
+    let categoryError = "";
     let supplierError = "";
-    let billIdError = "";
+
     if (this.state.typeId == 1 || this.state.typeId == 2) {
-      categoryIdError =
-        this.state.categoryId == 0 ? "Please select Catgory Id" : "";
+      categoryError =
+        this.state.category == 0 ? "Please select Catgory Id" : "";
     } else if (this.state.typeId == 3) {
       supplierError = this.state.supplier == 0 ? "Please select supplier" : "";
-      billIdError = this.state.billId == 0 ? "Please select bill Id" : "";
     }
 
     let promise = new Promise((resolve, reject) => {
@@ -267,8 +348,7 @@ class AddPaymentScreen extends React.Component {
           dateError,
           paymentAmountError,
           supplierError,
-          billIdError,
-          categoryIdError,
+          categoryError,
           typeIdError,
           modeError
         },
@@ -279,15 +359,12 @@ class AddPaymentScreen extends React.Component {
           } else if (this.state.paymentAmountError) {
             status.valid = false;
             status.message = paymentAmountError;
-          } else if (this.state.billIdError) {
-            status.valid = false;
-            status.message = billIdError;
           } else if (this.state.supplierError) {
             status.valid = false;
             status.message = supplierError;
-          } else if (this.state.categoryIdError) {
+          } else if (this.state.categoryError) {
             status.valid = false;
-            status.message = categoryIdError;
+            status.message = categoryError;
           } else if (this.state.typeIdError) {
             status.valid = false;
             status.message = typeIdError;
@@ -331,13 +408,14 @@ class AddPaymentScreen extends React.Component {
           paymentDate.getDate();
 
         var formData = {
-          category_id: this.state.categoryId,
+          category_id: this.state.category,
           transaction_amount: parseInt(this.state.paymentAmount),
           transaction_description: this.state.description,
           transaction_date: paymentDateFormatted,
-          bill_id: this.state.billId,
           transaction_mode_id: this.state.mode,
           supplier_id: this.state.supplier,
+          bill_id: null,
+          bill_status: null,
           userId: userId,
           shop_id: userShopId,
           transaction_type: this.state.typeId,
@@ -347,24 +425,50 @@ class AddPaymentScreen extends React.Component {
         if (this.state.formType == 1) {
           formData.id = this.state.payInfo.id;
         }
+
+        let multipartData = formData;
+
+        if (this.state.paymentImage != null) {
+          multipartData = await createFormData(
+            "transaction_image",
+            this.state.paymentImage,
+            formData,
+            false
+          );
+        }
         console.log("formData : ", formData);
 
         let serverCallPayment =
           this.state.formType == 0
-            ? await PaymentService.addPayment(formData)
-            : await PaymentService.updatePayment(formData);
+            ? await PaymentService.addPayment(multipartData)
+            : await PaymentService.updatePayment(multipartData);
         this.setState({ isLoading: false });
         if (serverCallPayment.status == 0) {
           var msg = serverCallPayment.msg;
-          utility.showAlert(msg);
+          Toast.show({
+            text: msg,
+            buttonText: "Okay",
+            type: "danger",
+            duration: 5000
+          });
         } else {
+          await userPreferences.setPreferences(
+            userPreferences.passbookTab,
+            "1"
+          );
+          await userPreferences.setPreferences(userPreferences.billsTab, "1");
+          await userPreferences.setPreferences(
+            userPreferences.supplierTab,
+            "1"
+          );
+          await userPreferences.setPreferences(userPreferences.homeTab, "1");
           this.setState({
             category_id: 0,
             transaction_amount: "",
             transaction_description: "",
             transaction_date: new Date(),
-            billId: 0,
             mode: 0,
+            paymentImage: null,
             supplier_id: 0,
             transaction_type: 0,
             transaction_pending_amount: 0
@@ -398,7 +502,7 @@ class AddPaymentScreen extends React.Component {
     return (
       <>
         <Row style={styles.InputSection}>
-          <EATextLabel labelText={"Supplier"} />
+          <EATextLabel labelText={"Supplier Name"} />
           <EAPicker
             note
             mode="dropdown"
@@ -410,7 +514,7 @@ class AddPaymentScreen extends React.Component {
           />
         </Row>
 
-        <Row style={styles.InputSection}>
+        {/* <Row style={styles.InputSection}>
           <EATextLabel labelText={"Bill Id"} />
           <EAPicker
             note
@@ -421,7 +525,7 @@ class AddPaymentScreen extends React.Component {
             //  iosIcon={<Icon name="arrow-down" />}
             onValueChange={this.onChangeText("billId")}
           />
-        </Row>
+        </Row> */}
       </>
     );
   }
@@ -435,11 +539,11 @@ class AddPaymentScreen extends React.Component {
             <EAPicker
               note
               mode="dropdown"
-              selectedValue={this.state.categoryId}
+              selectedValue={this.state.category}
               option={this.state.arrCategories}
-              error={this.state.categoryIdError}
+              error={this.state.categoryError}
               //  iosIcon={<Icon name="arrow-down" />}
-              onValueChange={this.onChangeText("categoryId")}
+              onValueChange={this.onChangeText("category")}
             />
           </Row>
         </>
@@ -474,6 +578,9 @@ class AddPaymentScreen extends React.Component {
                   androidMode={"default"}
                   onDateChange={this.onChangeText("date")}
                   disabled={false}
+                  formatChosenDate={date => {
+                    return utility.formatDate(date);
+                  }}
                 />
               </Row>
 
@@ -502,7 +609,7 @@ class AddPaymentScreen extends React.Component {
                   keyboardType="number-pad"
                   error={this.state.paymentAmountError}
                   onBlur={this.onBlurText(
-                    "required",
+                    "numeric",
                     "paymentAmountError",
                     "paymentAmount"
                   )}
@@ -515,7 +622,7 @@ class AddPaymentScreen extends React.Component {
                   note
                   mode="dropdown"
                   selectedValue={this.state.mode}
-                  option={Enums.paymentMode}
+                  option={this.state.arrPaymentModes}
                   error={this.state.modeError}
                   //  iosIcon={<Icon name="arrow-down" />}
                   onValueChange={this.onChangeText("mode")}
@@ -536,8 +643,35 @@ class AddPaymentScreen extends React.Component {
                   onChangeText={this.onChangeText("description")}
                 />
               </Row>
+              <Row style={FormStyle.fileInputSection}>
+                <Button dark transparent activeOpacity={1}>
+                  <Text style={FormStyle.inputLabel}>Attachments</Text>
+                </Button>
+                <Button
+                  onPress={this.selectImage}
+                  style={FormStyle.attachButton}
+                  dark
+                  transparent
+                >
+                  <Icon name="ios-add" style={FormStyle.attachIcon} />
+                </Button>
+              </Row>
             </Grid>
           </KeyboardAvoidingView>
+          {this.state.paymentImage != null ? (
+            <View style={FormStyle.fileSection}>
+              <View>
+                <FileItem
+                  pressHandler={this.fileHandler}
+                  fileData={this.state.paymentImage}
+                  index={0}
+                  type={0}
+                ></FileItem>
+              </View>
+            </View>
+          ) : (
+            <></>
+          )}
         </Content>
         <Footer>
           <FooterTab>

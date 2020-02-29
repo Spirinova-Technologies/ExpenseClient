@@ -5,7 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   Modal,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Keyboard
 } from "react-native";
 import {
   Container,
@@ -24,6 +25,8 @@ import {
   Grid,
   Row,
   Toast,
+  ListItem,
+  List,
   StyleProvider
 } from "native-base";
 import getTheme from "../../../native-base-theme/components";
@@ -33,7 +36,8 @@ import {
   EATextInput,
   EATextLabel,
   EADatePicker,
-  EAPicker
+  EAPicker,
+  FileItem
 } from "../../components";
 import {
   isValid,
@@ -61,6 +65,7 @@ class AddBillScreen extends React.Component {
       arrSuppliers: [],
       billModalVisible: false,
       paymentAmount: 0,
+      paymentStatus: 0,
       date: new Date(),
       billNumber: "",
       billType: 1,
@@ -68,7 +73,9 @@ class AddBillScreen extends React.Component {
       supplier: 0,
       amount: "",
       description: "",
-      image: null,
+      billImage: [],
+      billOldPreviewImage: [],
+      billOldImage: [],
       billTypeError: "",
       billStatusError: "",
       dateError: "",
@@ -78,7 +85,14 @@ class AddBillScreen extends React.Component {
       description: "",
       imageError: ""
     };
-    this.SettleBillCompletionHandler = this.SettleBillCompletionHandler.bind(this);
+
+    this.SettleBillCompletionHandler = this.SettleBillCompletionHandler.bind(
+      this
+    );
+
+    this.validateImage = this.validateImage.bind(this);
+    this.fileHandler = this.fileHandler.bind(this);
+    this.selectImage = this.selectImage.bind(this);
     this.pressCancelHandler = this.pressCancelHandler.bind(this);
   }
 
@@ -88,7 +102,7 @@ class AddBillScreen extends React.Component {
 
   async componentDidMount() {
     this.getSuppliers();
-    this.getPermissionAsync();
+    this.getPermissionAsyncCameraRoll();
 
     const { navigation } = this.props;
     const formType = navigation.getParam("formType");
@@ -96,8 +110,23 @@ class AddBillScreen extends React.Component {
     if (formType != undefined) {
       if (formType == 1) {
         const billInfo = navigation.getParam("billInfo");
+        console.log("billInfo : ", billInfo);
+        var oldBillImage = [];
+        if (billInfo.bill_image != "" && billInfo.bill_image.length != 0) {
+          billInfo.bill_image.forEach(value => {
+            let filename = value.substring(
+              value.lastIndexOf("/") + 1,
+              value.length
+            );
+            var dicBillImage = {
+              uri: value,
+              filename: filename
+            };
 
-        //  console.log("new Date(billInfo.bill_date) : ",new Date(billInfo.bill_date))
+            oldBillImage.push(dicBillImage);
+          });
+        }
+        console.log("oldBillImage : ", oldBillImage);
         this.setState({
           billInfo: billInfo,
           formType: formType,
@@ -108,7 +137,9 @@ class AddBillScreen extends React.Component {
           supplier: billInfo.supplier_id,
           amount: billInfo.bill_amount + "",
           description: billInfo.bill_description,
-          image: null
+          billImage: [],
+          billOldImage: billInfo.bill_image == "" ? [] : billInfo.bill_image,
+          billOldPreviewImage: oldBillImage
         });
       } else {
         this.setState({
@@ -119,7 +150,7 @@ class AddBillScreen extends React.Component {
     }
   }
 
-  getPermissionAsync = async () => {
+  getPermissionAsyncCameraRoll = async () => {
     if (Constants.platform.ios) {
       const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
       this.setState({ hasCameraPermission: status === "granted" });
@@ -133,7 +164,52 @@ class AddBillScreen extends React.Component {
     this.setState({ billModalVisible: visible });
   }
 
+  validateImage= async () =>  {
+    if (this.state.formType == 1) {
+      var fileCount = this.state.billImage.length + this.state.billOldImage.length
+      console.log("fileCount: ",fileCount)
+      if (fileCount > 3) {
+        Toast.show({
+          text: "You can select max 3 images only.",
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
+        return;
+      } else {
+        this.selectImage();
+      }
+    }else{
+      var fileCount = this.state.billImage.length
+      console.log("fileCount: ",fileCount)
+
+      if ( fileCount > 3) {
+        Toast.show({
+          text: "You can select max 3 images only.",
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
+        return;
+      } else {
+        this.selectImage();
+      }
+    }
+    
+  }
+
   selectImage = async () => {
+    const permission = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+    if (permission.status !== "granted") {
+      Toast.show({
+        text: "Sorry, we need camera roll permissions to make this work.",
+        buttonText: "Okay",
+        type: "success",
+        duration: 5000
+      });
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsMultipleSelection: true,
@@ -142,8 +218,24 @@ class AddBillScreen extends React.Component {
     });
 
     if (!result.cancelled) {
-      this.setState({ image: result });
+      console.log(" result : ", result);
+
+      let filename = await result.uri.substring(
+        result.uri.lastIndexOf("/") + 1,
+        result.uri.length
+      );
+      console.log(" filename : ", filename);
+      var fileDic = result;
+      fileDic.filename = filename;
+      console.log(" fileDic : ", fileDic);
+
+      var fileArr = this.state.billImage;
+      fileArr.push(fileDic);
+      this.setState({
+        billImage: fileArr
+      });
     }
+    // this.setState({ billImage: result });
   };
 
   onChangeText = key => text => {
@@ -186,7 +278,12 @@ class AddBillScreen extends React.Component {
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "success",
+          duration: 5000
+        });
       } else {
         if (supplierData.supplier != null) {
           var arrSupplier = [];
@@ -217,7 +314,7 @@ class AddBillScreen extends React.Component {
   validate = async () => {
     let status = { valid: true, message: "" };
     let dateError = isValid("required", this.state.date);
-    let amountError = isValid("required", this.state.amount);
+    let amountError = isValid("amount", this.state.amount);
     let billError = isValid("required", this.state.billNumber);
     let supplierError =
       this.state.supplier == 0 ? "Please select supplier" : "";
@@ -258,8 +355,6 @@ class AddBillScreen extends React.Component {
     return promise;
   };
 
-  
-
   submitBillForm = async () => {
     try {
       let status = await this.validate();
@@ -289,12 +384,13 @@ class AddBillScreen extends React.Component {
           billDate.getDate();
         var formData = {
           bill_number: this.state.billNumber,
-          bill_amount: this.state.amount,
+          bill_amount: parseInt(this.state.amount),
           bill_description: this.state.description,
           bill_date: billDateFormatted,
           bill_type: this.state.billType,
           bill_status: this.state.billStatus,
           shop_id: userShopId,
+          bill_old_image:this.state.billOldImage,
           supplier_id: this.state.supplier,
           userId: userId
         };
@@ -303,22 +399,38 @@ class AddBillScreen extends React.Component {
           formData.id = this.state.billInfo.id;
         }
 
-        // let multipartData = formData;
-        //   if(this.state.image != null){
-        //     multipartData = createFormData('bill_image',this.state.image,formData)
-        //     multipartData.append("body",formData)
-        //   }
-        console.log("formData : ", formData);
+        console.log("formData : ",formData)
+
+        let multipartData = formData;
+        if (this.state.billImage.length != 0) {
+          multipartData = await createFormData(
+            "bill_image",
+            this.state.billImage,
+            formData,
+            true
+          );
+        }
 
         let serverCallBill =
           this.state.formType == 0
-            ? await BillService.addBill(formData)
-            : await BillService.updateBill(formData);
+            ? await BillService.addBill(multipartData)
+            : await BillService.updateBill(multipartData);
         this.setState({ isLoading: false });
         if (serverCallBill.status == 0) {
           var msg = serverCallBill.msg;
-          utility.showAlert(msg);
+          Toast.show({
+            text: msg,
+            buttonText: "Okay",
+            type: "success",
+            duration: 5000
+          });
         } else {
+          await userPreferences.setPreferences(userPreferences.billsTab, "1");
+          await userPreferences.setPreferences(
+            userPreferences.supplierTab,
+            "1"
+          );
+          await userPreferences.setPreferences(userPreferences.homeTab, "1");
           this.setState({
             date: new Date(),
             billNumber: "",
@@ -327,7 +439,8 @@ class AddBillScreen extends React.Component {
             supplier: 0,
             amount: "",
             description: "",
-            image: null
+            billOldImage: [],
+            billImage: []
           });
           var msg = serverCallBill.msg;
           Toast.show({
@@ -354,20 +467,39 @@ class AddBillScreen extends React.Component {
     }
   };
 
-
-  SettleBillCompletionHandler(paymentAmount){
-    this.setState({
-      paymentAmount:paymentAmount
-    },()=>{
-      this.submitPayment()
-    })
+  SettleBillCompletionHandler(paymentAmount, paymentStatus) {
+    this.setState(
+      {
+        paymentAmount: paymentAmount,
+        paymentStatus: paymentStatus
+      },
+      () => {
+        this.submitPayment();
+      }
+    );
   }
 
-  pressCancelHandler(){
-    this.setBillModalVisible(false)
+  pressCancelHandler() {
+    this.setBillModalVisible(false);
   }
 
   submitPayment = async () => {
+    console.log(
+      "parseInt(this.state.paymentAmount) : ",
+      parseInt(this.state.paymentAmount)
+    );
+    console.log("parseInt(this.state.amount) : ", parseInt(this.state.amount));
+    if (parseInt(this.state.paymentAmount) > parseInt(this.state.amount)) {
+      Toast.show({
+        text: "Payment amount not be greater than bill amount",
+        buttonText: "Okay",
+        type: "success",
+        duration: 5000
+      });
+      Keyboard.dismiss()
+      return;
+    }
+
     this.setState({ isLoading: true });
     let userId = await userPreferences.getPreferences(userPreferences.userId);
     let userShopId = await userPreferences.getPreferences(
@@ -387,6 +519,7 @@ class AddBillScreen extends React.Component {
       transaction_description: " ",
       transaction_date: paymentDateFormatted,
       bill_id: this.state.billInfo.id,
+      bill_status: this.state.paymentStatus,
       transaction_mode_id: 1,
       supplier_id: this.state.billInfo.supplier_id,
       userId: userId,
@@ -401,9 +534,18 @@ class AddBillScreen extends React.Component {
     this.setState({ isLoading: false });
     if (serverCallPayment.status == 0) {
       var msg = serverCallPayment.msg;
-      utility.showAlert(msg);
+      Toast.show({
+        text: msg,
+        buttonText: "Okay",
+        type: "success",
+        duration: 5000
+      });
     } else {
-      this.setBillModalVisible(false)
+      await userPreferences.setPreferences(userPreferences.billsTab, "1");
+      await userPreferences.setPreferences(userPreferences.passbookTab, "1");
+      await userPreferences.setPreferences(userPreferences.supplierTab, "1");
+      await userPreferences.setPreferences(userPreferences.homeTab, "1");
+      this.setBillModalVisible(false);
       var msg = serverCallPayment.msg;
       Toast.show({
         text: msg,
@@ -427,14 +569,74 @@ class AddBillScreen extends React.Component {
         >
           <View style={styles.modal}>
             <SettleBill
-            completionHandler={this.SettleBillCompletionHandler}
+              completionHandler={this.SettleBillCompletionHandler}
               pressCancelHandler={this.pressCancelHandler}
+              billInfo={this.state.billInfo}
             ></SettleBill>
           </View>
         </Modal>
       </View>
     );
   };
+
+  fileHandler(index, type) {
+    console.log("index : ", index);
+    if(type == 0){
+      var billImage = this.state.billImage
+      billImage.splice(index, 1);
+      this.setState({
+        billImage:billImage
+      })
+    }else if(type == 1){
+      var billOldPreviewImage = this.state.billOldPreviewImage
+      billOldPreviewImage.splice(index, 1);
+      var billOldImage = this.state.billOldImage
+      billOldImage.splice(index, 1);
+      this.setState({
+        billOldPreviewImage:billOldPreviewImage,
+        billOldImage:billOldImage
+      })
+    }
+  }
+
+  renderSubmit = () => {
+    if (this.state.formType == 0) {
+      return (
+        <FooterTab>
+          <Button full onPress={this.submitBillForm}>
+            <Text>Add Bill</Text>
+          </Button>
+        </FooterTab>
+      );
+    } else {
+      return (
+        <FooterTab style={styles.footer}>
+          <Button onPress={this.submitBillForm} style={styles.buttonUpdate}>
+            <Text>Update</Text>
+          </Button>
+          <Button
+            onPress={() => {
+              this.setBillModalVisible(true);
+            }}
+            style={styles.buttonSettle}
+          >
+            <Text>Settle Bill</Text>
+          </Button>
+        </FooterTab>
+      );
+    }
+  };
+
+  renderItem = (item, index) => (
+    <ListItem key={index + ""}>
+      <Body>
+        <Text>{item.filename}</Text>
+      </Body>
+      <Right>
+        <Icon name="arrow-forward" />
+      </Right>
+    </ListItem>
+  );
 
   renderAddBill = () => {
     return (
@@ -460,6 +662,9 @@ class AddBillScreen extends React.Component {
                   androidMode={"default"}
                   onDateChange={this.onChangeText("date")}
                   disabled={false}
+                  formatChosenDate={date => {
+                    return utility.formatDate(date);
+                  }}
                 />
               </Row>
               <Row style={FormStyle.InputSection}>
@@ -469,16 +674,15 @@ class AddBillScreen extends React.Component {
                   value={this.state.amount}
                   keyboardType="number-pad"
                   error={this.state.amountError}
-                  onBlur={this.onBlurText("required", "amountError", "amount")}
+                  onBlur={this.onBlurText("amount", "amountError", "amount")}
                   onChangeText={this.onChangeText("amount")}
                 />
               </Row>
               <Row style={FormStyle.InputSection}>
                 <EATextLabel labelText={"Bill Number"} />
                 <EATextInput
-                  autoCapitalize="none"
+                  autoCapitalize="characters"
                   value={this.state.billNumber}
-                  keyboardType="default"
                   error={this.state.billError}
                   onBlur={this.onBlurText(
                     "required",
@@ -526,46 +730,60 @@ class AddBillScreen extends React.Component {
                   onChangeText={this.onChangeText("description")}
                 />
               </Row>
-              <Row style={FormStyle.InputSection}>
-                {/* <EATextLabel labelText={"Description"} /> */}
-                <View
-                  style={{
-                    flex: 1,
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}
+              <Row style={FormStyle.fileInputSection}>
+                <Button dark transparent activeOpacity={1}>
+                  <Text style={FormStyle.inputLabel}>Attachments</Text>
+                </Button>
+                <Button
+                  onPress={this.validateImage}
+                  style={FormStyle.attachButton}
+                  dark
+                  transparent
                 >
-                  <Button onPress={this.selectImage}>
-                    <Text>Pick an image from camera roll</Text>
-                  </Button>
-                  {this.state.image != null ? (
-                    <Thumbnail
-                      square
-                      large
-                      source={{ uri: this.state.image.uri }}
-                      style={{ marginTop: 10 }}
-                    />
-                  ) : null}
-                </View>
+                  <Icon name="ios-add" style={FormStyle.attachIcon} />
+                </Button>
               </Row>
             </Grid>
           </KeyboardAvoidingView>
-        </Content>
-        <Footer>
-          <FooterTab>
-            <Button full onPress={this.submitBillForm}>
-              <Text>{this.state.formType == 0 ? "Add Bill" : "Update"}</Text>
-            </Button>
-            {this.state.formType == 1 ?   (<Button full onPress={()=>{
-              this.setBillModalVisible(true)
-            }}>
-              <Text>Settle Bill</Text>
-            </Button>) :(<></>)
 
-            }
-          
-          </FooterTab>
-        </Footer>
+          <View style={FormStyle.fileSection}>
+            {this.state.billImage.length > 0 ? (
+              <View>
+                {this.state.billImage.map((value, index) => {
+                  return (
+                    <FileItem
+                      pressHandler={this.fileHandler}
+                      fileData={value}
+                      index={index}
+                      key={index + "new"}
+                      type={0}
+                    ></FileItem>
+                  );
+                })}
+              </View>
+            ) : (
+              <></>
+            )}
+            {this.state.billOldPreviewImage.length > 0 ? (
+              <View>
+                {this.state.billOldPreviewImage.map((value, index) => {
+                  return (
+                    <FileItem
+                      pressHandler={this.fileHandler}
+                      fileData={value}
+                      index={index}
+                      key={index + "old"}
+                      type={1}
+                    ></FileItem>
+                  );
+                })}
+              </View>
+            ) : (
+              <></>
+            )}
+          </View>
+        </Content>
+        <Footer>{this.renderSubmit()}</Footer>
       </>
     );
   };
@@ -592,6 +810,7 @@ class AddBillScreen extends React.Component {
               <Right />
             </Header>
             {this.state.isLoading ? <Loader /> : this.renderAddBill()}
+            {/* {this.renderAddBill()} */}
           </Container>
         </StyleProvider>
         {this.state.billModalVisible ? this.renderSettleBill() : <></>}
@@ -607,6 +826,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)"
   },
-})
+  footer: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF"
+  },
+  buttonUpdate: {
+    flex: 1,
+    marginRight: 2,
+    backgroundColor: "#FE3852"
+  },
+  buttonSettle: {
+    flex: 1,
+    marginLeft: 2,
+    backgroundColor: "#6ACB67"
+  }
+});
 
 export default AddBillScreen;

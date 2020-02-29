@@ -23,7 +23,7 @@ import {
   EADatePicker,
   RadioButton
 } from "../../components";
-import { isValid } from "../../utility";
+import { isValid ,utility} from "../../utility";
 class FilterScreen extends Component {
   constructor(props) {
     super(props);
@@ -105,6 +105,9 @@ class FilterScreen extends Component {
                   androidMode={"default"}
                   onDateChange={this._onChangeText("fromDate")}
                   disabled={false}
+                  formatChosenDate={date => {
+                    return utility.formatDate(date);
+                  }}
                 />
               </View>
               <View style={styles.dateGroup}>
@@ -120,6 +123,9 @@ class FilterScreen extends Component {
                   androidMode={"default"}
                   onDateChange={this._onChangeText("toDate")}
                   disabled={false}
+                  formatChosenDate={date => {
+                    return utility.formatDate(date);
+                  }}
                 />
               </View>
             </View>

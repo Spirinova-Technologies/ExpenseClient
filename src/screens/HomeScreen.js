@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Dimensions } from "react-native";
+import { View, StyleSheet, Dimensions,ScrollView } from "react-native";
 import {
   Container,
   CardItem,
@@ -38,10 +38,17 @@ class HomeScreen extends React.Component {
       isLoading: false
     };
   }
-  
 
-  handleTabFocus = () => {
-    this.getHomeDetail();
+  handleTabFocus = async () => {
+    let homeTab = await userPreferences.getPreferences(
+      userPreferences.homeTab
+    );
+    if(homeTab != null && homeTab == "1"){
+      await userPreferences.setPreferences(
+        userPreferences.homeTab,"0"
+      );
+      this.getHomeDetail();
+    }
   };
 
   addBillHandler = async () => {
@@ -55,15 +62,17 @@ class HomeScreen extends React.Component {
   exportSummaryReportHandler = async () => {};
 
   async componentDidMount() {
-    this.props.navigation.addListener('didFocus', this.handleTabFocus)
-    // this.getHomeDetail();
+    this.getHomeDetail();
+    this.props.navigation.addListener("didFocus", this.handleTabFocus);
   }
 
   getHomeDetail = async () => {
-    let userShopId = await userPreferences.getPreferences(userPreferences.userShopId);
+    let userShopId = await userPreferences.getPreferences(
+      userPreferences.userShopId
+    );
 
-    if(userShopId == null){
-      return
+    if (userShopId == null) {
+      return;
     }
 
     try {
@@ -75,10 +84,10 @@ class HomeScreen extends React.Component {
         otherExpense: null
       });
       let userId = await userPreferences.getPreferences(userPreferences.userId);
-
+    
       var formData = {
         userId: userId,
-        shopId:userShopId
+        shopId: userShopId
       };
       this.setState({ isLoading: true });
       let serverCallHome = await HomeService.getHomeDetail(formData);
@@ -95,7 +104,7 @@ class HomeScreen extends React.Component {
         var msg = serverCallHome.msg;
         utility.showAlert(msg);
       } else {
-        console.log("serverCallHome :",serverCallHome)
+        console.log("serverCallHome :", serverCallHome);
         this.setState({
           billOutStanding: serverCallHome.bills_outstanding,
           overallSpending: serverCallHome.overall_spending,
@@ -103,6 +112,7 @@ class HomeScreen extends React.Component {
           pettyCash: serverCallHome.petty_cash,
           otherExpense: serverCallHome.other_expense
         });
+        console.log("getHomeDetail");
       }
     } catch (error) {
       this.setState({ isLoading: false }, () => {
@@ -126,7 +136,7 @@ class HomeScreen extends React.Component {
             <H1 style={{ fontWeight: "500", fontSize: 30 }}>
               {this.state.overallSpending != null
                 ? this.state.overallSpending
-                : "-"}
+                : "0"}
             </H1>{" "}
             Rs
           </Text>
@@ -140,7 +150,7 @@ class HomeScreen extends React.Component {
                   <H1 style={[styles.textHeader, styles.textDanger]}>
                     {this.state.billOutStanding != null
                       ? this.state.billOutStanding
-                      : "-"}
+                      : "0"}
                   </H1>{" "}
                   Rs
                 </Text>
@@ -155,7 +165,7 @@ class HomeScreen extends React.Component {
                   <H1 style={styles.textHeader}>
                     {this.state.paymentMade != null
                       ? this.state.paymentMade
-                      : "-"}
+                      : "0"}
                   </H1>{" "}
                   Rs
                 </Text>
@@ -168,7 +178,7 @@ class HomeScreen extends React.Component {
                 <Text style={styles.textLabel}>Petty Cash</Text>
                 <Text style={styles.textHeaderOuter}>
                   <H1 style={styles.textHeader}>
-                    {this.state.pettyCash != null ? this.state.pettyCash : "-"}
+                    {this.state.pettyCash != null ? this.state.pettyCash : "0"}
                   </H1>{" "}
                   Rs
                 </Text>
@@ -183,7 +193,7 @@ class HomeScreen extends React.Component {
                   <H1 style={styles.textHeader}>
                     {this.state.otherExpense != null
                       ? this.state.otherExpense
-                      : "-"}
+                      : "0"}
                   </H1>{" "}
                   Rs
                 </Text>
@@ -232,7 +242,15 @@ class HomeScreen extends React.Component {
       <StyleProvider style={getTheme(commonColors)}>
         <Container>
           <Content padder contentContainerStyle={styles.container}>
-            {this.state.isLoading ? <Loader /> : this.renderHomeDetail()}
+            <ScrollView
+              contentContainerStyle={{
+                flexGrow: 1,
+                justifyContent: "space-between"
+              }}
+              showsHorizontalScrollIndicator={false}
+            >
+              {this.state.isLoading ? <Loader /> : this.renderHomeDetail()}
+            </ScrollView>
           </Content>
         </Container>
       </StyleProvider>

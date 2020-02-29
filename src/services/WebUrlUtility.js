@@ -2,8 +2,12 @@ export default WebUrlUtility = {
     baseUrl:"http://3.12.226.80:3000/",
     login:"api/users/login",
     register:"api/users/create",
+    forgotPassword:"api/users/forget_password",
+    otpVerification:"api/users/otp_verify",
+    changePassword:"api/users/change_password",
     profileDetails:"api/users/profile_details",
     updateProfile:"api/users/update",
+    addMoney:"api/shop/balance_add",
     addShop:"api/shop/create",
     updateShop:"api/shop/update",
     shopList:"api/shop/list",
@@ -19,5 +23,4 @@ export default WebUrlUtility = {
     paymentList:"api/transaction/list",
     categoryList:"api/category/list",
     homeDetail:"api/transaction/home"
-    
 }

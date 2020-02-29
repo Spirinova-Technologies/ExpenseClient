@@ -47,8 +47,17 @@ class SupplierScreen extends React.Component {
     this.editSupplier = this.editSupplier.bind(this);
   }
 
-  handleTabFocus = () => {
-    this.getSupplier();
+  handleTabFocus = async() => {
+    this.setState({searchSupplier:""})
+    let supplierTab = await userPreferences.getPreferences(
+      userPreferences.supplierTab
+    );
+    if(supplierTab != null && supplierTab == "1"){
+      await userPreferences.setPreferences(
+        userPreferences.supplierTab,"0"
+      );
+      this.getSupplier();
+    }
   };
 
   addSupplier = async () => {
@@ -79,6 +88,7 @@ class SupplierScreen extends React.Component {
   };
 
   async componentDidMount() {
+    this.getSupplier();
     this.props.navigation.addListener('didFocus', this.handleTabFocus)
   }
 
@@ -107,7 +117,12 @@ class SupplierScreen extends React.Component {
       this.setState({ isLoading: false });
       if (supplierData.status == 0) {
         var msg = supplierData.msg;
-        utility.showAlert(msg);
+        Toast.show({
+          text: msg,
+          buttonText: "Okay",
+          type: "danger",
+          duration: 5000
+        });
       } else {
         this.setState({
           arrSuppliers: supplierData.supplier,

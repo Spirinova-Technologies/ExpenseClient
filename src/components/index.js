@@ -1,4 +1,4 @@
-import { EATextInput, EATextLabel, EADatePicker,EATextInputRightButton } from './TextInput';
+import { EATextInput, EATextLabel, EADatePicker,EATextInputRightButton,EAOtpTextInput } from './TextInput';
 import EASideBar from './Sidebar';
 import EAListItem from './ListItem';
 import EASingleListItem from './SingleListItem';
@@ -8,7 +8,7 @@ import EASpinner from './Spinner';
 import RadioButton from './RadioButton';
 import PopoverMenu from './PopoverMenu';
 import EAPicker from './EAPicker';
-
+import FileItem from './FileItem';
 
 
 export {
@@ -24,5 +24,7 @@ export {
     RadioButton,
     PopoverMenu,
     EAPicker,
+    EAOtpTextInput,
+    FileItem,
     EATextInputRightButton
 };

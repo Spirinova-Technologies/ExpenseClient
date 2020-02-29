@@ -9,7 +9,7 @@ class BaseService {
     this.config = { ...Constants.manifest.extra };
     // this.base = this.config.server;
     this.base = WebUrlUtility.baseUrl;
-    this.options = {};
+    this.options = {}; 
   }
 
   /**
@@ -45,7 +45,7 @@ class BaseService {
   /**
    * @description perform a network operation through this method, it takes identical params as fetch
    */
-  webServiceCall = async (url, options, requestType) => {
+  webServiceCall = async (url, parameter, requestType) => {
     axios.defaults.headers.common["Accept"] = "application/json";
     axios.defaults.headers.common["Content-Type"] = "application/json";
 
@@ -59,8 +59,9 @@ class BaseService {
     if (requestType == 1) {
       //For Post method
       try {
+        console.log("formData : ",parameter)
         const serviceResponse = await axios
-          .post(url, options)
+          .post(url, parameter)
           .then(response => {
             console.log("response.data : ",response.data);
             return Promise.resolve(response)
@@ -79,18 +80,19 @@ class BaseService {
       }
     } else  if (requestType == 2){
       //For multipart Upload method
-    //  axios.defaults.headers.common["Content-Type"] = "multipart/form-data";
+    axios.defaults.headers.common["Content-Type"] = "multipart/form-data";
       try {
-
+        console.log("formData : ",parameter)
+        console.log("axios.defaults.headers : ", axios.defaults.headers);
         const serviceResponse = await axios
-          .post(url, options)
+          .post(url, parameter)
           .then(response => {
-            console.log("response : ", response);
+            console.log("serviceResponse response : ", response);
           //  console.log("response.data : ",response.data);
             return Promise.resolve(response)
           })
           .catch(error => {
-            console.log("error : ", error);
+            console.log("catch error : ", error);
             //return Promise.reject(error)
         //    console.log("response error: ",error);
             throw "Something went wrong.Please try again.";
@@ -100,6 +102,7 @@ class BaseService {
           return serviceResponse
 
       } catch (error) {
+        console.log("throw error : ",error);
         throw error;
       }
     } 

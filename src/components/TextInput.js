@@ -10,6 +10,20 @@ import { inputText, inputLabel, inputTextError } from "../styles";
 import { DatePicker, Icon } from "native-base";
 
 class EATextInput extends Component {
+
+  constructor(props) {
+    super(props);
+    this.inputRef = React.createRef();
+  }
+
+  focusInput() {
+    this.inputRef.current.focus();
+  }
+
+  blurInput() {
+    this.inputRef.current.blur();
+  }
+
   render() {
     return (
       <View style={styles.inputView}>
@@ -21,6 +35,7 @@ class EATextInput extends Component {
             this.props.error ? styles.inputError : {}
           ]}
           maxLength={this.props.maxLength || 100}
+          ref={this.inputRef}
         />
         {this.props.error ? (
           <Text style={styles.inputtextError}>{this.props.error}</Text>
@@ -30,8 +45,56 @@ class EATextInput extends Component {
   }
 }
 
-class EATextInputRightButton extends Component {
+
+class EAOtpTextInput extends Component {
+
+  constructor(props) {
+    super(props);
+    this.inputRef = React.createRef();
+  }
+
+  focusInput() {
+    this.inputRef.current.focus();
+  }
+
+  blurInput() {
+    this.inputRef.current.blur();
+  }
+
   
+
+  render() {
+    return (
+      <View style={styles.inputView}>
+        <TextInput
+          {...this.props}
+          style={[
+            styles.input,{minWidth:60,textAlign: 'center'},
+            this.props.error ? styles.inputError : {}
+          ]}
+          maxLength={this.props.maxLength || 100}
+          ref={this.inputRef}
+        />
+      </View>
+    );
+  }
+}
+
+class EATextInputRightButton extends Component {
+  constructor(props) {
+    super(props);
+    this.inputRef = React.createRef();
+  }
+
+  focusInput() {
+    this.inputRef.current.focus();
+  }
+
+  blurInput() {
+    this.inputRef.current.blur();
+  }
+
+
   render() {
     const {btnPressHandler} = this.props;
     return (
@@ -43,12 +106,13 @@ class EATextInputRightButton extends Component {
         <TextInput
           {...this.props}
           style={[
-            { flex: 1 },
+            { flex: 1, maxHeight:45, },styles.inputViewRightText
           ]}
           maxLength={this.props.maxLength || 100}
+          ref={this.inputRef}
         />
         <TouchableOpacity onPress={()=>{btnPressHandler()}} style={styles.rightbutton}>
-          <Icon type={this.props.btnImageType} name={this.props.btnImage}  size={20} />
+          <Icon type={this.props.btnImageType} name={this.props.btnImage} style={styles.rightIcon} />
         </TouchableOpacity>
       </View>
       {this.props.error ? (
@@ -100,20 +164,26 @@ const styles = StyleSheet.create({
   inputViewRightButton: {
     flexDirection: "row",
     height: 45,
+    maxHeight:45,
     backgroundColor: "#F7F7F7",
     borderWidth: 1,
     borderColor: "#EDEDED",
     marginBottom: 10,
-    fontFamily: "Roboto",
     includeFontPadding: false,
     paddingLeft: 10,
     paddingRight: 10,
-    fontSize: 15,
     borderRadius: 4,
-    color: "#637381"
+  },
+  inputViewRightText:{
+    color: "#637381",
+    fontFamily: "Roboto",
+    fontSize: 15
   },
   rightbutton:{
-      alignSelf:'center'
+    alignSelf:'center'
+  },
+  rightIcon:{
+    fontSize: 20, color: '#637381'
   },
   inputView: {
     marginBottom: 10
@@ -126,4 +196,4 @@ const styles = StyleSheet.create({
     padding: 10
   }
 });
-export { EATextInput, EATextLabel, EADatePicker, EATextInputRightButton };
+export { EATextInput, EATextLabel, EADatePicker, EATextInputRightButton,EAOtpTextInput };

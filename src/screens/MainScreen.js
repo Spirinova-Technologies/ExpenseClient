@@ -38,9 +38,9 @@ class MainScreen extends React.Component {
       arrMenuItem: [
         { key: 0, text: "Add Bill" },
         { key: 1, text: "Add Payment" },
-        { key: 2, text: "Add Money" },
-        { key: 3, text: "Add Supplier" },
-        { key: 4, text: "Import Suppliers" }
+        // { key: 2, text: "Add Money" },
+        { key: 2, text: "Add Supplier" },
+        { key: 3, text: "Import Suppliers" }
       ]
     };
     this.optionClickHandler = this.optionClickHandler.bind(this);
@@ -62,11 +62,12 @@ class MainScreen extends React.Component {
         // code block
         break;
       case 2:
-        // this.props.navigation.navigate("AddBill",{formType:0});
+        this.props.navigation.navigate("AddSupplier",{formType:0});
+        // this.props.navigation.navigate("AddMoney");
         // code block
         break;
       case 3:
-        this.props.navigation.navigate("AddSupplier",{formType:0});
+        // this.props.navigation.navigate("AddSupplier",{formType:0});
         // code block
         break;
       case 4:

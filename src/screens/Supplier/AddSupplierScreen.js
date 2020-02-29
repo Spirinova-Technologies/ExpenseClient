@@ -4,7 +4,8 @@ import {
   AsyncStorage,
   StyleSheet,
   ScrollView,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import {
   Container,
@@ -31,10 +32,11 @@ import { EATextInput, EATextLabel,EATextInputRightButton } from "../../component
 import { isValid, userPreferences, utility } from "../../utility";
 import Constants from "expo-constants";
 import * as Permissions from "expo-permissions";
-// import * as Contacts from 'expo-contacts';
 import Loader from "../Shared/Loader";
+import ContactsScreen from "../Shared/ContactsScreen";
 import SupplierService from "../../services/supplier";
-import Contacts from "react-native-contacts";
+import SupplierScreen from "./SupplierScreen";
+
 
 class AddSupplierScreen extends React.Component {
   constructor(props) {
@@ -53,9 +55,17 @@ class AddSupplierScreen extends React.Component {
       cityError: "",
       addressError: "",
       hasContactPermission:false,
-      isLoading: false
+      isLoading: false,
+      isContact:false
     };
+
+    this.gstNumber = React.createRef();
+    this.name = React.createRef();
+    this.address = React.createRef();
+    this.phone = React.createRef();
+    this.city = React.createRef();
     this.browseContactTapped = this.browseContactTapped.bind(this)
+    this.contactCompletionHandler = this.contactCompletionHandler.bind(this);
   }
 
   static navigationOptions = {
@@ -69,6 +79,14 @@ class AddSupplierScreen extends React.Component {
   };
 
   onBlurText = (validatorKey, errorKey, stateKey) => () => {
+
+    if(stateKey == "gstNumber" && this.state[stateKey] == ""){
+      this.setState({
+        [errorKey]: ""
+      });
+      return
+    }
+
     this.setState({
       [errorKey]: isValid(validatorKey, this.state[stateKey])
     });
@@ -103,7 +121,7 @@ class AddSupplierScreen extends React.Component {
    
     const { status, permissions } = await Permissions.askAsync(Permissions.CONTACTS);
     if (status === 'granted') {
-      this.setState({ hasContactPermission: (status === "granted" ? true:false) });
+     console.log("granted")
     } else {
       throw new Error('Contacts permission not granted');
     }
@@ -111,32 +129,48 @@ class AddSupplierScreen extends React.Component {
 
   browseContactTapped = async () =>
   {
-
-    Contacts.getAll((err, contacts) => {
-      if (err === "denied") {
-        console.warn("Permission to access contacts was denied");
-      } else {
-        console.warn("contacts : ",contacts);
-      }
-    });
-    
-        // const { data } = await Contacts.getContactsAsync({
-        //   fields: [Contacts.Fields.Emails],
-        // });
-        // console.log("data : ",data);
-        // if (data.length > 0) {
-        //   const contact = data[0];
-          
-        //   console.log("contact : ",contact);
-        // }
-    
-      console.log('Right button tapped')
+    const permission = await Permissions.askAsync(Permissions.CONTACTS);
+    if (permission.status !== 'granted') {
+      return;
+    }
+    this.setState({ isContact:true})    
   }
+
+  async contactCompletionHandler(completionFlag,contact){
+    console.log("completionFlag : ",completionFlag )
+    if(completionFlag == 1){
+      var fullName = ""
+      var supplierPhone = ""
+      console.log("Contacts : ",contact )
+      if(contact != null && contact != undefined ){
+        if(contact.name != "" ){
+          fullName = contact.name
+        }
+
+        if(contact.phoneNumbers != null && contact != undefined && contact.phoneNumbers.length >= 1){
+          if(Platform.OS === 'ios'){
+            supplierPhone = contact.phoneNumbers[0].digits.replace(/[^0-9]/g,"")
+          }else{
+            supplierPhone = contact.phoneNumbers[0].number.replace(/[^0-9]/g,"")
+          }
+         
+        }
+      }
+      this.setState({ isContact:false,phone:supplierPhone,name:fullName})
+    }else{
+      this.setState({ isContact:false})
+    }
+  }
+
   validate = async () => {
     let status = { valid: true, message: "" };
-    let nameError = isValid("name", this.state.name);
+    let nameError = isValid("alphanumericSpace", this.state.name);
     let phoneError = isValid("phone", this.state.phone);
-    let gstError = isValid("gstinNumber", this.state.gstNumber);
+    let gstError = "" 
+    if(this.state.gstNumber != ""){
+      gstError = isValid("gstinNumber", this.state.gstNumber);
+    }
+    
     let addressError = isValid("required", this.state.address);
     let cityError = isValid("required", this.state.city);
 
@@ -208,6 +242,8 @@ class AddSupplierScreen extends React.Component {
           formData.id = this.state.supplier.id;
         }
 
+        console.log("formData : ", formData);
+
         let serverCallSupplier =
           this.state.formType == 0
             ? await SupplierService.addSupplier(formData)
@@ -217,6 +253,9 @@ class AddSupplierScreen extends React.Component {
           var msg = serverCallSupplier.msg;
           utility.showAlert(msg);
         } else {
+          await userPreferences.setPreferences(
+            userPreferences.supplierTab,"1"
+          );
           this.setState({
             name: "",
             gstNumber: "",
@@ -258,10 +297,10 @@ class AddSupplierScreen extends React.Component {
             flexGrow: 1
           }}
         >
-          <KeyboardAvoidingView behavior="padding" enabled>
+          <KeyboardAvoidingView behavior={Platform.select({ android: null, ios: 'padding' })} enabled >
             <Grid>
               <Row style={FormStyle.InputSection}>
-                <EATextLabel labelText={"Contact Number"} />
+                <EATextLabel labelText={"Contact Number*"} />
                 <EATextInputRightButton
                   autoCapitalize="none"
                   value={this.state.phone}
@@ -273,25 +312,30 @@ class AddSupplierScreen extends React.Component {
                   btnPressHandler={this.browseContactTapped}
                   btnImage={'contacts'}
                   btnImageType={'MaterialIcons'}
+                  returnKeyType={'next'}
+                  ref={this.phone}
+                  onSubmitEditing={() => this.name.current.focusInput()} 
                 />
               </Row>
               <Row style={FormStyle.InputSection}>
-                <EATextLabel labelText={"Supplier Name"} />
+                <EATextLabel labelText={"Supplier Name*"} />
                 <EATextInput
                   autoCapitalize="words"
                   value={this.state.name}
-                  keyboardType="default"
                   error={this.state.nameError}
-                  onBlur={this.onBlurText("name", "nameError", "name")}
+                  onBlur={this.onBlurText("alphanumericSpace", "nameError", "name")}
                   onChangeText={this.onChangeText("name")}
+                  returnKeyType={'next'}
+                  ref={this.name}
+                  onSubmitEditing={() => this.gstNumber.current.focusInput()} 
                 />
               </Row>
               <Row style={FormStyle.InputSection}>
-                <EATextLabel labelText={"GST Number"} />
+                <EATextLabel labelText={"GST Number (Optional)"} />
                 <EATextInput
                   autoCapitalize="characters"
                   value={this.state.gstNumber}
-                  keyboardType="default"
+                  
                   error={this.state.gstError}
                   onBlur={this.onBlurText(
                     "gstinNumber",
@@ -299,25 +343,29 @@ class AddSupplierScreen extends React.Component {
                     "gstNumber"
                   )}
                   onChangeText={this.onChangeText("gstNumber")}
+                  returnKeyType={'next'}
+                  ref={this.gstNumber}
+                  onSubmitEditing={() => this.city.current.focusInput()} 
                 />
               </Row>
               <Row style={FormStyle.InputSection}>
-                <EATextLabel labelText={"Street/City"} />
+                <EATextLabel labelText={"Street/City*"} />
                 <EATextInput
                   autoCapitalize="words"
                   value={this.state.city}
-                  keyboardType="default"
                   error={this.state.cityError}
                   onBlur={this.onBlurText("required", "cityError", "city")}
                   onChangeText={this.onChangeText("city")}
+                  returnKeyType={'next'}
+                  ref={this.city}
+                  onSubmitEditing={() => this.address.current.focusInput()} 
                 />
               </Row>
               <Row style={FormStyle.InputSection}>
-                <EATextLabel labelText={"Business Address"} />
+                <EATextLabel labelText={"Business Address*"} />
                 <EATextInput
                   autoCapitalize="sentences"
                   value={this.state.address}
-                  keyboardType="default"
                   error={this.state.addressError}
                   onBlur={this.onBlurText(
                     "required",
@@ -325,6 +373,9 @@ class AddSupplierScreen extends React.Component {
                     "address"
                   )}
                   onChangeText={this.onChangeText("address")}
+                  returnKeyType={'done'}
+                  ref={this.address}
+                  onSubmitEditing={() => this.address.current.blurInput()} 
                 />
               </Row>
             </Grid>
@@ -347,7 +398,7 @@ class AddSupplierScreen extends React.Component {
   render() {
     return (
       <StyleProvider style={getTheme(commonColors)}>
-        <Container>
+        {this.state.isContact == false ? ( <Container>
           <Header noShadow>
             <Left>
               <Button
@@ -366,6 +417,8 @@ class AddSupplierScreen extends React.Component {
           </Header>
           {this.state.isLoading ? <Loader /> : this.renderAddSupplier()}
         </Container>
+       ):( <ContactsScreen pressHandler={this.contactCompletionHandler} />)
+        }
       </StyleProvider>
     );
   }

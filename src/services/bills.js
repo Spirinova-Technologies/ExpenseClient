@@ -14,7 +14,7 @@ class BillService extends BaseService {
    * @description This function will call the add Bill api.
    */
   addBill = bill => {
-    return this.webServiceCall(`${this.base}${WebUrlUtility.addBill}`, bill, 1)
+    return this.webServiceCall(`${this.base}${WebUrlUtility.addBill}`, bill, 2)
       .then(response => {
         return response.data;
       })

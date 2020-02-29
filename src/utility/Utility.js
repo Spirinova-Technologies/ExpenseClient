@@ -49,28 +49,64 @@ class Utility {
 
 
   formatDate(date){
-    var formatedDate =  date.getFullYear() +
+    const arrMonth = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var formatedDate =  date.getDate() +
     "-" +
-    (date.getMonth() + 1) +
+    arrMonth[(date.getMonth())] +
     "-" +
-    date.getDate();
+    date.getFullYear();
     return formatedDate;
   }
+  capitalize(str){
+    var capitalizeStr = str+""
+    if(capitalizeStr.length >= 2){
+      capitalizeStr = capitalizeStr.charAt(0).toUpperCase() + capitalizeStr.slice(1)
+    }else{
+      capitalizeStr = capitalizeStr.charAt(0).toUpperCase() 
+    }
+    console.log(capitalizeStr)
+    return capitalizeStr;
+    }
+
+    removeSpecialCharacter(str){
+      console.log("clearedStr : ",str)
+      var clearedStr = str+"".replace(/[^0-9]/g,"")
+      console.log("clearedStr : ",clearedStr)
+      return clearedStr;
+    }
 }
+
+
 
 const utility = new Utility();
 
-const createFormData = (fileKey, fileObject, body) => {
+const createFormData = (fileKey, fileObject, body,isArray) => {
   const data = new FormData();
-
-  data.append(fileKey, {
-    name: fileObject.fileName,
-    type: fileObject.type,
-    uri:
-      Platform.OS === "android"
-        ? fileObject.uri
-        : fileObject.uri.replace("file://", "")
-  });
+ 
+  if(isArray == true){
+    var fileCount = 0
+    fileObject.forEach(key => {
+      data.append(fileKey,{
+        name: "Testname"+fileCount,
+        type: 'image/jpeg',//fileObject.type,
+        uri:
+          Platform.OS === "android"
+            ? key.uri
+            : key.uri.replace("file://", "")
+      });
+      fileCount = fileCount + 1;
+    })
+   
+  }else{
+    data.append(fileKey, {
+      name: "Testname",
+      type: 'image/jpeg',//fileObject.type,
+      uri:
+        Platform.OS === "android"
+          ? fileObject.uri
+          : fileObject.uri.replace("file://", "")
+    });
+  }
 
   Object.keys(body).forEach(key => {
     data.append(key,body[key]);

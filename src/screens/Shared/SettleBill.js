@@ -28,17 +28,20 @@ class SettleBill extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      selectedItem:"",
       radioItems: [
-        {
-          label: "Partial Settlement",
-          size: 25,
-          color: "#FE3852",
-          selected: false
-        },
         {
           label: "Full Settlement",
           color: "#FE3852",
           size: 25,
+          id:1,
+          selected: false
+        },
+        {
+          label: "Partial Settlement",
+          size: 25,
+          color: "#FE3852",
+          id:2,
           selected: false
         }
       ],
@@ -57,11 +60,18 @@ class SettleBill extends Component {
   }
 
   changeActiveRadioButton(index) {
+    console.log("index : ",index)
     this.state.radioItems.map(item => {
       item.selected = false;
     });
+    
 
     this.state.radioItems[index].selected = true;
+    if(index == 0){
+      this.setState({ amount :this.props.billInfo.bill_amount+""})
+    }else{
+      this.setState({ amount :""})
+    }
 
     this.setState({ radioItems: this.state.radioItems }, () => {
       this.setState({ selectedItem: this.state.radioItems[index].label });
@@ -81,15 +91,15 @@ _onBlurText = (validatorKey, errorKey, stateKey) => () => {
 };
 
 _submitSettleBillForm = () => {
-  let amountError = isValid('required', this.state.amount);
- // let paymentError = isValid('required', this.state.address);
+  let amountError = isValid('amount',this.state.amount);
   
   this.setState({
       amountError
   })
 
   if ( !amountError ) {
-    this.props.completionHandler(this.state.amount)
+    var billStatus = this.state.selectedItem === "Full Settlement" ? 2:3
+    this.props.completionHandler(this.state.amount,billStatus)
   }
 };
 
@@ -121,8 +131,10 @@ _submitSettleBillForm = () => {
                   value={this.state.amount}
                   keyboardType="number-pad"
                   error={this.state.amountError}
-                  onBlur={this._onBlurText('required', 'amountError', 'amount')}
-                  onChangeText={this._onChangeText('amount')} />
+                  onBlur={this._onBlurText('amount', 'amountError', 'amount')}
+                  onChangeText={this._onChangeText('amount')}
+                  editable={this.state.selectedItem === "Full Settlement" ?  false:true }
+                  />
               </View>
             </View>
             <View style={styles.buttonGroup}>

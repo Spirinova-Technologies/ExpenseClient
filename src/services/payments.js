@@ -17,7 +17,7 @@ class PaymentService extends BaseService {
     return this.webServiceCall(
       `${this.base}${WebUrlUtility.addPayment}`,
       payment,
-      1
+      2
     )
       .then(response => {
         return response.data;
@@ -34,7 +34,7 @@ class PaymentService extends BaseService {
     return this.webServiceCall(
       `${this.base}${WebUrlUtility.updatePayment}/${payment.id}`,
       payment,
-      1
+      2
     )
       .then(response => {
         return response.data;

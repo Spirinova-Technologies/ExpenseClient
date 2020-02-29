@@ -27,8 +27,12 @@ class UserService extends BaseService {
   /**
    * @description - This Service will return the user details
    */
-  getProfile  = userId => {
-    return this.webServiceCall(`${this.base}${WebUrlUtility.profileDetails}/${userId}`, {}, 0)
+  getProfile = userId => {
+    return this.webServiceCall(
+      `${this.base}${WebUrlUtility.profileDetails}/${userId}`,
+      {},
+      0
+    )
       .then(response => {
         return response.data;
       })
@@ -37,29 +41,76 @@ class UserService extends BaseService {
       });
   };
 
- /**
+  /**
    * @description This function will call the update user api.
    */
-  updateProfile = (user,userId) => {
-    return this.webServiceCall(`${this.base}${WebUrlUtility.updateProfile}/${userId}`, user, 2)
+  updateProfile = (user, userId) => {
+    return this.webServiceCall(
+      `${this.base}${WebUrlUtility.updateProfile}/${userId}`,
+      user,
+      2
+    )
       .then(response => {
-       
         return response.data;
       })
       .catch(error => {
-       
         throw error;
       });
   };
-
-  
 
   /**
    * @description - This service will create a new user and default organisation and store for the same user
    */
   signup = user => {
+    return this.webServiceCall(`${this.base}${WebUrlUtility.register}`, user, 1)
+      .then(response => {
+        return response.data;
+      })
+      .catch(error => {
+        throw error;
+      });
+  };
+
+  /**
+   * @description This function will call the forgot password api with email .
+   */
+  forgotPassword = user => {
     return this.webServiceCall(
-      `${this.base}${WebUrlUtility.register}`,
+      `${this.base}${WebUrlUtility.forgotPassword}`,
+      user,
+      1
+    )
+      .then(response => {
+        return response.data;
+      })
+      .catch(error => {
+        throw error;
+      });
+  };
+
+  /**
+   * @description This function will call the otp verification  api with email .
+   */
+  otpVerification = user => {
+    return this.webServiceCall(
+      `${this.base}${WebUrlUtility.otpVerification}`,
+      user,
+      1
+    )
+      .then(response => {
+        return response.data;
+      })
+      .catch(error => {
+        throw error;
+      });
+  };
+
+  /**
+   * @description This function will call the change password  api with email .
+   */
+  changePassword = user => {
+    return this.webServiceCall(
+      `${this.base}${WebUrlUtility.changePassword}`,
       user,
       1
     )

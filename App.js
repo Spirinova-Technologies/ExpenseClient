@@ -18,6 +18,11 @@ import { Root } from "native-base";
 );
 
 export default class App extends React.Component {
+
+  componentDidMount(){
+    console.ignoredYellowBox = ['Warning: Each', 'Warning: Failed'];
+  }
+  
   render() {
     return (
       <Root>

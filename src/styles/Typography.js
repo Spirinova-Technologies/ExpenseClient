@@ -4,6 +4,7 @@ export const ToolbarHeader = {
     fontWeight: "800",
     fontFamily: 'Roboto',
     fontSize: 18,
+    backgroundColor:'#F8F9FA'
 }
 
 export const ToolBarSubheader = {

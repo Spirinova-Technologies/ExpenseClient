@@ -2,6 +2,8 @@ import HomeScreen from './HomeScreen';
 import LoginScreen from './Authentication/LoginScreen';
 import SignupScreen from './Authentication/SignupScreen';
 import ForgotPassword from './Authentication/ForgotPassword';
+import OtpScreen from './Authentication/OtpScreen';
+import ChangePassword from './Authentication/ChangePassword';
 
 import AuthLoadingScreen from './AuthLoadingScreen';
 import MainScreen from './MainScreen';
@@ -16,6 +18,7 @@ import AddBillScreen from './Bills/AddBillScreen';
 import PassbookScreen from './Passbook/PassbookScreen';
 import AddPaymentScreen from './Passbook/AddPaymentScreen';
 
+import AddMoney from './Shops/AddMoney';
 import AddShopScreen from './Shops/AddShop';
 import ShopScreen from './Shops/ShopScreen';
 import ShopDetail from './Shops/ShopDetail';
@@ -29,6 +32,8 @@ import Loader from './Shared/Loader';
 export {
     HomeScreen,
     LoginScreen,
+    OtpScreen,
+    ChangePassword,
     SignupScreen,
     ForgotPassword,
     AuthLoadingScreen,
@@ -40,6 +45,7 @@ export {
     AddPaymentScreen,
     AddBillScreen,
     AddShopScreen,
+    AddMoney,
     ShopScreen,
     ShopDetail,
     AboutScreen,

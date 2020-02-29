@@ -1,6 +1,15 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { Button, Icon, Text, Grid, Row, Col, View ,Thumbnail} from "native-base";
+import {
+  Button,
+  Icon,
+  Text,
+  Grid,
+  Row,
+  Col,
+  View,
+  Thumbnail
+} from "native-base";
 
 import {
   isValid,
@@ -26,14 +35,22 @@ const EAListItem = ({
   if (type == 1) {
     //Supplier listing
     return (
-      <TouchableOpacity onPress={() => pressHandler(supplier)}>
+      <TouchableOpacity onPress={() => pressHandler(supplier)} activeOpacity={1}>
         <Grid style={styles.item}>
           <Row style={styles.row}>
             <Col size={70}>
               <Text style={styles.title}>{supplier.supplier_name}</Text>
             </Col>
             <Col size={30} style={styles.amountCol}>
-              <Text style={[styles.amountText, styles.dangerText]}>-1000</Text>
+              <Text
+                style={
+                  supplier.outstanding_amount == 0
+                    ? [styles.amountText]
+                    : [styles.amountText, styles.dangerText]
+                }
+              >
+                {supplier.outstanding_amount}
+              </Text>
             </Col>
           </Row>
           <Row style={styles.row}>
@@ -59,12 +76,23 @@ const EAListItem = ({
           <Row
             style={[styles.row, thirdLine == false ? styles.displayNone : null]}
           >
-            <Button small rounded style={styles.listButton} onPress={() => linkHandler(supplier,1)}>
+            <Button
+              small
+              rounded
+              style={styles.listButton}
+              onPress={() => linkHandler(supplier, 1)}
+            >
               <Icon type="MaterialIcons" name="phone" style={styles.iconText} />
             </Button>
             {/* ,{backgroundColor:'white'} */}
-            <Button small style={styles.imageButton} onPress={() => linkHandler(supplier,2)}>
+            <Button
+              small
+              transparent
+              style={styles.imageButton}
+              onPress={() => linkHandler(supplier, 2)}
+            >
               <Thumbnail
+              
                 source={AppConstant.ImageConstant.ic_whatsapp}
                 style={styles.iconImage}
               />
@@ -74,9 +102,18 @@ const EAListItem = ({
       </TouchableOpacity>
     );
   } else if (type == 2) {
+    var billStatus = "Unsettled"
+    if(billInfo.bill_status == 1){
+      billStatus = "Unsettled"
+    }else if(billInfo.bill_status == 2){
+      billStatus = "Settled"
+    }else if(billInfo.bill_status == 3){
+      billStatus = "Partially Settled"
+    }
+
     //Bill listing
     return (
-      <TouchableOpacity onPress={() => pressHandler(billInfo)}>
+      <TouchableOpacity onPress={() => pressHandler(billInfo)} activeOpacity={1}>
         <Grid style={styles.item}>
           <Row style={styles.row}>
             <Col size={70}>
@@ -100,7 +137,7 @@ const EAListItem = ({
             </Col>
             <Col style={styles.amountCol}>
               <Text style={[styles.amountText, styles.subHeader]}>
-                {billInfo.bill_status == 2 ? "Settled" : "Unsettled"}
+                {billStatus}
               </Text>
             </Col>
           </Row>
@@ -179,16 +216,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginLeft: 0,
     marginRight: 0,
-    alignSelf:'center'
+    alignSelf: "center"
   },
-  imageButton:{
+  imageButton: {
     margin: 0,
     height: 32,
     width: 32,
-    backgroundColor:'transparent'
+    backgroundColor: "transparent"
   },
-  iconImage:{
-    alignSelf:'center'
+  iconImage: {
+    alignSelf: "center"
   },
   amountText: {
     fontSize: 18,
